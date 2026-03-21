@@ -1,0 +1,12 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "djangoSettings": "ecommerce_site.settings",
+  "extraPaths": ["."],
+  "typeCheckingMode": "basic",
+  "reportAttributeAccessIssue": "none",
+  "reportUnknownMemberType": "none",
+  "useLibraryCodeForTypes": true,
+  "reportMissingModuleSource": "none"
+}

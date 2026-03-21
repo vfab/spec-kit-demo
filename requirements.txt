@@ -1,0 +1,35 @@
+# Core Django requirements
+Django==5.2.12
+python-decouple==3.8
+Pillow==12.1.1
+psycopg2-binary==2.9.9
+django-debug-toolbar==4.4.6
+dj-database-url==2.3.0
+django-axes==7.0.1
+
+# Testing requirements
+pytest==9.0.2
+pytest-django==4.12.0
+pytest-cov==7.0.0
+pytest-mock==3.15.1
+factory-boy==3.3.0
+faker==40.5.1
+
+# Code quality tools
+black==26.3.1
+isort==5.13.2
+flake8==7.0.0
+pre-commit==3.7.0
+mypy==1.9.0
+django-stubs==5.0.0
+radon==6.0.1
+bandit==1.9.4
+pip-audit==2.10.0
+
+# For future use (will be added as needed)
+# django-crispy-forms==2.1
+# django-allauth==0.61.1
+# djangorestframework==3.14.0
+django-redis==5.4.0
+redis==7.3.0
+# celery==5.3.4

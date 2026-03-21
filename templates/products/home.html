@@ -1,0 +1,257 @@
+{% extends 'base.html' %} {% load static %} {% block title %}ShopHub - Your
+Online Shopping Destination{% endblock %} {% block content %}
+<!-- Hero Section -->
+<section class="hero-section animate-fade-in">
+  <div class="container">
+    <div class="hero-content text-center text-white">
+      <h1 class="hero-title text-shadow animate-slide-up">
+        Welcome to ShopHub
+      </h1>
+      <p class="hero-subtitle animate-slide-up" style="animation-delay: 0.2s">
+        Discover amazing products at unbeatable prices
+      </p>
+      <a
+        href="{% url 'products:product_list' %}"
+        class="btn btn-light btn-lg btn-custom animate-slide-up"
+        style="animation-delay: 0.4s"
+      >
+        Shop Now <i class="fas fa-arrow-right ms-2"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+  <!-- Featured Categories -->
+  <section class="mb-5">
+    <div class="row align-items-center mb-4 animate-slide-up">
+      <div class="col">
+        <h2 class="mb-0">Shop by Category</h2>
+        <p class="text-muted">Find exactly what you're looking for</p>
+      </div>
+      <div class="col-auto">
+        <a
+          href="{% url 'products:product_list' %}"
+          class="btn btn-outline-primary"
+        >
+          View All <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      {% for category in categories %}
+      <div class="col-lg-3 col-md-6">
+        <a
+          href="{% url 'products:category' category.slug %}"
+          class="category-card d-block"
+        >
+          <i
+            class="fas fa-{{ category.name|lower|slice:':3' }}{% if category.name == 'Electronics' %}laptop{% elif category.name == 'Fashion' %}tshirt{% elif category.name == 'Home & Garden' %}home{% else %}dumbbell{% endif %}"
+          ></i>
+          <h5>{{ category.name }}</h5>
+          <small>{{ category.children.count }} subcategories</small>
+        </a>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i>
+          No categories available yet.
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Featured Products -->
+  <section class="mb-5">
+    <div class="row align-items-center mb-4">
+      <div class="col">
+        <h2 class="mb-0">Featured Products</h2>
+        <p class="text-muted">Our top picks just for you</p>
+      </div>
+      <div class="col-auto">
+        <a
+          href="{% url 'products:product_list' %}?featured=true"
+          class="btn btn-outline-primary"
+        >
+          View All Featured <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      {% for product in featured_products %}
+      <div class="col-lg-3 col-md-6">
+        <div class="card product-card h-100">
+          <div class="product-image">
+            {% if product.is_featured %}
+            <div class="product-badge featured">Featured</div>
+            {% endif %} {% if product.images.first %}
+            <img
+              src="{{ product.images.first.image.url }}"
+              alt="{{ product.name }}"
+              class="card-img-top"
+            />
+            {% else %}
+            <i class="fas fa-image text-muted"></i>
+            {% endif %}
+          </div>
+
+          <div class="card-body product-info d-flex flex-column">
+            <a
+              href="{% url 'products:product_detail' product.slug %}"
+              class="product-title"
+            >
+              {{ product.name }}
+            </a>
+
+            <p class="text-muted small flex-grow-1">
+              {{ product.description|truncatewords:15 }}
+            </p>
+
+            <div class="mt-auto">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="product-price">${{ product.price }}</span>
+                <small class="text-muted">{{ product.category.name }}</small>
+              </div>
+
+              <div class="d-grid gap-2 mt-3">
+                <a
+                  href="{% url 'products:product_detail' product.slug %}"
+                  class="btn btn-primary btn-sm"
+                >
+                  <i class="fas fa-eye me-1"></i> View Details
+                </a>
+                {% if product.stock_quantity > 0 %}
+                <button
+                  class="btn btn-outline-success btn-sm add-to-cart-btn"
+                  data-product-id="{{ product.id }}"
+                  data-url="{% url 'orders:add_to_cart' product.id %}"
+                >
+                  <i class="fas fa-cart-plus me-1"></i> Add to Cart
+                </button>
+                {% else %}
+                <button class="btn btn-outline-secondary btn-sm" disabled>
+                  <i class="fas fa-times me-1"></i> Out of Stock
+                </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="alert alert-info text-center">
+          <i class="fas fa-info-circle me-2"></i>
+          No featured products available yet.
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Stats/Features Section -->
+  <section class="mb-5">
+    <div class="row g-4">
+      <div class="col-lg-3 col-md-6 text-center">
+        <div class="p-4">
+          <i
+            class="fas fa-shipping-fast text-primary mb-3"
+            style="font-size: 3rem"
+          ></i>
+          <h5>Free Shipping</h5>
+          <p class="text-muted mb-0">On orders over $50</p>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 text-center">
+        <div class="p-4">
+          <i class="fas fa-undo text-primary mb-3" style="font-size: 3rem"></i>
+          <h5>Easy Returns</h5>
+          <p class="text-muted mb-0">30-day return policy</p>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 text-center">
+        <div class="p-4">
+          <i class="fas fa-lock text-primary mb-3" style="font-size: 3rem"></i>
+          <h5>Secure Payment</h5>
+          <p class="text-muted mb-0">SSL encrypted checkout</p>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 text-center">
+        <div class="p-4">
+          <i
+            class="fas fa-headset text-primary mb-3"
+            style="font-size: 3rem"
+          ></i>
+          <h5>24/7 Support</h5>
+          <p class="text-muted mb-0">Customer service</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Newsletter Signup -->
+  <section class="mb-5">
+    <div class="bg-light p-5 rounded-3 text-center">
+      <h3>Stay Updated</h3>
+      <p class="text-muted mb-4">
+        Subscribe to our newsletter and get exclusive deals!
+      </p>
+      <form class="row g-3 justify-content-center" method="post">
+        <div class="col-auto">
+          <input
+            type="email"
+            class="form-control"
+            placeholder="Enter your email"
+            required
+          />
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-envelope me-1"></i> Subscribe
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %} {% block extra_scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Add to cart functionality for home page
+    const addToCartButtons = document.querySelectorAll(".add-to-cart-btn");
+
+    addToCartButtons.forEach((button) => {
+      button.addEventListener("click", function () {
+        const productId = this.getAttribute("data-product-id");
+        const url = this.getAttribute("data-url");
+
+        // Show loading state
+        this.innerHTML =
+          '<i class="fas fa-spinner fa-spin me-1"></i> Adding...';
+        this.disabled = true;
+
+        // In a real application, you would make an AJAX request here
+        // For now, we'll simulate the action
+        setTimeout(() => {
+          this.innerHTML = '<i class="fas fa-check me-1"></i> Added!';
+          this.classList.remove("btn-outline-success");
+          this.classList.add("btn-success");
+
+          // Reset after 2 seconds
+          setTimeout(() => {
+            this.innerHTML =
+              '<i class="fas fa-cart-plus me-1"></i> Add to Cart';
+            this.classList.remove("btn-success");
+            this.classList.add("btn-outline-success");
+            this.disabled = false;
+          }, 2000);
+        }, 1000);
+      });
+    });
+  });
+</script>
+{% endblock %}

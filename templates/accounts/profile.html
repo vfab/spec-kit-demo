@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profile - ShopHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{% url 'products:home' %}">Home</a>
+          </li>
+          <li class="breadcrumb-item active">My Profile</li>
+        </ol>
+      </nav>
+      <h1 class="mb-0">My Profile</h1>
+      <p class="text-muted">Manage your account information and preferences</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Profile Information -->
+    <div class="col-lg-8">
+      <div class="row">
+        <!-- Personal Information -->
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              <h5 class="mb-0">
+                <i class="fas fa-user me-2"></i>Personal Information
+              </h5>
+              <a
+                href="{% url 'accounts:profile_edit' %}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </a>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label text-muted">Full Name</label>
+                <p class="mb-0">
+                  {% if user.first_name or user.last_name %} {{
+                  profile.full_name }} {% else %}
+                  <span class="text-muted">Not provided</span>
+                  {% endif %}
+                </p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted">Username</label>
+                <p class="mb-0">{{ user.username }}</p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted">Email Address</label>
+                <p class="mb-0">{{ user.email }}</p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted">Phone Number</label>
+                <p class="mb-0">
+                  {% if profile.phone_number %} {{ profile.phone_number }} {%
+                  else %}
+                  <span class="text-muted">Not provided</span>
+                  {% endif %}
+                </p>
+              </div>
+              <div class="mb-0">
+                <label class="form-label text-muted">Date of Birth</label>
+                <p class="mb-0">
+                  {% if profile.date_of_birth %} {{
+                  profile.date_of_birth|date:"F d, Y" }} {% else %}
+                  <span class="text-muted">Not provided</span>
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              <h5 class="mb-0">
+                <i class="fas fa-map-marker-alt me-2"></i>Default Address
+              </h5>
+              <a
+                href="{% url 'accounts:profile_edit' %}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </a>
+            </div>
+            <div class="card-body">
+              {% if profile.address_line_1 %}
+              <address class="mb-0">
+                {{ profile.address_line_1 }}<br />
+                {% if profile.address_line_2 %} {{ profile.address_line_2 }}<br />
+                {% endif %} {{ profile.city }}, {{ profile.state_province }} {{
+                profile.postal_code }}<br />
+                {{ profile.country }}
+              </address>
+              {% else %}
+              <p class="text-muted mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                No address provided. Add your address for faster checkout.
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Preferences -->
+        <div class="col-12 mb-4">
+          <div class="card">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              <h5 class="mb-0">
+                <i class="fas fa-cog me-2"></i>Account Preferences
+              </h5>
+              <a
+                href="{% url 'accounts:profile_edit' %}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                <i class="fas fa-edit"></i> Edit
+              </a>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      {%
+                      if
+                      profile.newsletter_subscription
+                      %}checked{%
+                      endif
+                      %}
+                      disabled
+                    />
+                    <label class="form-check-label">
+                      Newsletter Subscription
+                    </label>
+                  </div>
+                  <small class="text-muted"
+                    >Receive special offers and updates</small
+                  >
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      {%
+                      if
+                      profile.email_notifications
+                      %}checked{%
+                      endif
+                      %}
+                      disabled
+                    />
+                    <label class="form-check-label">
+                      Email Notifications
+                    </label>
+                  </div>
+                  <small class="text-muted"
+                    >Order updates and important notices</small
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Actions & Recent Orders -->
+    <div class="col-lg-4">
+      <!-- Quick Actions -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <a href="{% url 'accounts:profile_edit' %}" class="btn btn-primary">
+              <i class="fas fa-edit me-2"></i>Edit Profile
+            </a>
+            <a
+              href="{% url 'orders:order_list' %}"
+              class="btn btn-outline-primary"
+            >
+              <i class="fas fa-receipt me-2"></i>View Orders
+            </a>
+            <a href="{% url 'orders:cart' %}" class="btn btn-outline-success">
+              <i class="fas fa-shopping-cart me-2"></i>View Cart
+            </a>
+            <a
+              href="{% url 'accounts:logout' %}"
+              class="btn btn-outline-danger"
+            >
+              <i class="fas fa-sign-out-alt me-2"></i>Logout
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Orders -->
+      <div class="card">
+        <div
+          class="card-header d-flex justify-content-between align-items-center"
+        >
+          <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Orders</h5>
+          <a
+            href="{% url 'orders:order_list' %}"
+            class="btn btn-sm btn-outline-primary"
+          >
+            View All
+          </a>
+        </div>
+        <div class="card-body">
+          {% if recent_orders %} {% for order in recent_orders %}
+          <div
+            class="d-flex justify-content-between align-items-center mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}"
+          >
+            <div>
+              <div class="fw-medium">{{ order.order_number }}</div>
+              <small class="text-muted"
+                >{{ order.created_at|date:"M d, Y" }}</small
+              >
+            </div>
+            <div class="text-end">
+              <div class="fw-bold">${{ order.total_amount }}</div>
+              <small class="badge bg-{{ order.status|default:'secondary' }}">
+                {{ order.get_status_display }}
+              </small>
+            </div>
+          </div>
+          {% endfor %} {% else %}
+          <p class="text-muted mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            No orders yet.
+            <a href="{% url 'products:product_list' %}">Start shopping!</a>
+          </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Statistics -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-chart-bar me-2"></i>Account Statistics
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-md-3 mb-3">
+              <div class="card border-0 bg-light">
+                <div class="card-body py-3">
+                  <h3 class="text-primary mb-1">{{ recent_orders|length }}</h3>
+                  <p class="mb-0 text-muted">Total Orders</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card border-0 bg-light">
+                <div class="card-body py-3">
+                  <h3 class="text-success mb-1">
+                    ${{ recent_orders|length|default:0 }}
+                  </h3>
+                  <p class="mb-0 text-muted">Total Orders</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card border-0 bg-light">
+                <div class="card-body py-3">
+                  <h3 class="text-info mb-1">
+                    {{ user.date_joined|timesince }}
+                  </h3>
+                  <p class="mb-0 text-muted">Member Since</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3 mb-3">
+              <div class="card border-0 bg-light">
+                <div class="card-body py-3">
+                  <h3 class="text-warning mb-1">
+                    {% if profile.newsletter_subscription %}
+                    <i class="fas fa-check-circle"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle"></i>
+                    {% endif %}
+                  </h3>
+                  <p class="mb-0 text-muted">Newsletter</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_styles %}
+<style>
+  .card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 8px;
+  }
+
+  .form-check-input:disabled {
+    opacity: 0.7;
+  }
+
+  address {
+    line-height: 1.6;
+  }
+
+  .badge {
+    font-size: 0.7em;
+  }
+
+  .text-primary {
+    color: #0d6efd !important;
+  }
+  .text-success {
+    color: #198754 !important;
+  }
+  .text-info {
+    color: #0dcaf0 !important;
+  }
+  .text-warning {
+    color: #ffc107 !important;
+  }
+</style>
+{% endblock %}

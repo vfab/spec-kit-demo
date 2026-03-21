@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login - ShopHub{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+      <div class="card shadow">
+        <div class="card-header text-center bg-primary text-white">
+          <h4 class="mb-0"><i class="fas fa-sign-in-alt me-2"></i>Sign In</h4>
+        </div>
+        <div class="card-body p-4">
+          {% if messages %}
+          {% for message in messages %}
+          <div
+            class="alert alert-{{ message.tags }} alert-dismissible fade show"
+            role="alert"
+          >
+            {{ message }}
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+            ></button>
+          </div>
+          {% endfor %}
+          {% endif %}
+          
+          {% if form.errors %}
+          <div class="alert alert-danger">
+            <ul class="mb-0">
+              {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+              <li>{{ error }}</li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="{{ form.username.id_for_label }}" class="form-label">
+                <i class="fas fa-user me-1"></i>Username
+              </label>
+              {{ form.username }} {% if form.username.help_text %}
+              <div class="form-text">{{ form.username.help_text }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.password.id_for_label }}" class="form-label">
+                <i class="fas fa-lock me-1"></i>Password
+              </label>
+              {{ form.password }} {% if form.password.help_text %}
+              <div class="form-text">{{ form.password.help_text }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3 form-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="remember_me"
+                name="remember_me"
+              />
+              <label class="form-check-label" for="remember_me">
+                Remember me
+              </label>
+            </div>
+
+            <div class="d-grid mb-3">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+              </button>
+            </div>
+
+            <div class="text-center">
+              <p class="mb-2">
+                <a href="#" class="text-decoration-none"
+                  >Forgot your password?</a
+                >
+              </p>
+              <p class="text-muted">
+                Don't have an account?
+                <a
+                  href="{% url 'accounts:register' %}"
+                  class="text-decoration-none"
+                  >Sign up</a
+                >
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Continue as Guest -->
+      {% if request.GET.next %}
+      <div class="card mt-3 border-secondary">
+        <div class="card-body text-center">
+          <h6 class="card-title">Continue as Guest</h6>
+          <p class="card-text text-muted">
+            You can checkout without creating an account
+          </p>
+          <a href="{{ request.GET.next }}" class="btn btn-outline-secondary">
+            <i class="fas fa-shopping-cart me-2"></i>Continue as Guest
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Add Bootstrap classes to form fields
+    const formControls = document.querySelectorAll(
+      'input[type="text"], input[type="password"]',
+    );
+    formControls.forEach(function (control) {
+      control.classList.add("form-control");
+    });
+
+    // Focus on username field
+    const usernameField = document.querySelector('input[name="username"]');
+    if (usernameField) {
+      usernameField.focus();
+    }
+  });
+</script>
+{% endblock %}

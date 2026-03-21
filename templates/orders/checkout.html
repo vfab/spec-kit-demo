@@ -1,0 +1,742 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Checkout -
+ShopHub{% endblock %} {% block content %}
+<div class="container mt-4">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{% url 'products:home' %}">Home</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="{% url 'orders:cart' %}">Cart</a>
+      </li>
+      <li class="breadcrumb-item active">Checkout</li>
+    </ol>
+  </nav>
+
+  <!-- Page Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="mb-0">Checkout</h1>
+      <p class="text-muted">Complete your order</p>
+    </div>
+  </div>
+
+  <form method="post" class="needs-validation" novalidate id="checkoutForm">
+    {% csrf_token %}
+    <div class="row">
+      <!-- Checkout Form -->
+      <div class="col-lg-8">
+        <!-- Contact Information -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-user me-2"></i>Contact Information
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="first_name" class="form-label">First Name *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="first_name"
+                  name="first_name"
+                  value="{% if user.is_authenticated %}{{ user.first_name }}{% endif %}"
+                  required
+                />
+                <div class="invalid-feedback">
+                  Please provide your first name.
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label for="last_name" class="form-label">Last Name *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="last_name"
+                  name="last_name"
+                  value="{% if user.is_authenticated %}{{ user.last_name }}{% endif %}"
+                  required
+                />
+                <div class="invalid-feedback">
+                  Please provide your last name.
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label for="email" class="form-label">Email Address *</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  name="email"
+                  value="{% if user.is_authenticated %}{{ user.email }}{% endif %}"
+                  required
+                />
+                <div class="invalid-feedback">
+                  Please provide a valid email address.
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label for="phone_number" class="form-label"
+                  >Phone Number</label
+                >
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="phone_number"
+                  name="phone_number"
+                  value="{% if profile %}{{ profile.phone_number }}{% endif %}"
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billing Address -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-credit-card me-2"></i>Billing Address
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="billing_address_line_1" class="form-label"
+                  >Address Line 1 *</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="billing_address_line_1"
+                  name="billing_address_line_1"
+                  value="{% if profile %}{{ profile.address_line_1 }}{% endif %}"
+                  placeholder="1234 Main St"
+                  required
+                />
+                <div class="invalid-feedback">Please provide your address.</div>
+              </div>
+              <div class="col-12">
+                <label for="billing_address_line_2" class="form-label"
+                  >Address Line 2</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="billing_address_line_2"
+                  name="billing_address_line_2"
+                  value="{% if profile %}{{ profile.address_line_2 }}{% endif %}"
+                  placeholder="Apartment, studio, or floor"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="billing_city" class="form-label">City *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="billing_city"
+                  name="billing_city"
+                  value="{% if profile %}{{ profile.city }}{% endif %}"
+                  required
+                />
+                <div class="invalid-feedback">Please provide your city.</div>
+              </div>
+              <div class="col-md-4">
+                <label for="billing_state_province" class="form-label"
+                  >State/Province *</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="billing_state_province"
+                  name="billing_state_province"
+                  value="{% if profile %}{{ profile.state_province }}{% endif %}"
+                  required
+                />
+                <div class="invalid-feedback">
+                  Please provide your state/province.
+                </div>
+              </div>
+              <div class="col-md-2">
+                <label for="billing_postal_code" class="form-label"
+                  >ZIP/Postal Code *</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="billing_postal_code"
+                  name="billing_postal_code"
+                  value="{% if profile %}{{ profile.postal_code }}{% endif %}"
+                  required
+                />
+                <div class="invalid-feedback">
+                  Please provide your ZIP/postal code.
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label for="billing_country" class="form-label"
+                  >Country *</label
+                >
+                <select
+                  class="form-select"
+                  id="billing_country"
+                  name="billing_country"
+                  required
+                >
+                  <option value="">Choose country...</option>
+                  <option
+                    value="US"
+                    {%
+                    if
+                    profile.country=""
+                    ="US"
+                    or
+                    not
+                    profile
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    United States
+                  </option>
+                  <option
+                    value="CA"
+                    {%
+                    if
+                    profile.country=""
+                    ="CA"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    Canada
+                  </option>
+                  <option
+                    value="GB"
+                    {%
+                    if
+                    profile.country=""
+                    ="GB"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    United Kingdom
+                  </option>
+                  <option
+                    value="AU"
+                    {%
+                    if
+                    profile.country=""
+                    ="AU"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    Australia
+                  </option>
+                  <option
+                    value="DE"
+                    {%
+                    if
+                    profile.country=""
+                    ="DE"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    Germany
+                  </option>
+                  <option
+                    value="FR"
+                    {%
+                    if
+                    profile.country=""
+                    ="FR"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    France
+                  </option>
+                  <option
+                    value="JP"
+                    {%
+                    if
+                    profile.country=""
+                    ="JP"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    Japan
+                  </option>
+                  <option value="OTHER">Other</option>
+                </select>
+                <div class="invalid-feedback">Please select your country.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shipping Address -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-shipping-fast me-2"></i>Shipping Address
+              </h5>
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="shipping_same_as_billing"
+                  name="shipping_same_as_billing"
+                  checked
+                  onchange="toggleShippingAddress()"
+                />
+                <label class="form-check-label" for="shipping_same_as_billing">
+                  Same as billing address
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="card-body" id="shippingAddressForm" style="display: none">
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="shipping_address_line_1" class="form-label"
+                  >Address Line 1</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="shipping_address_line_1"
+                  name="shipping_address_line_1"
+                  placeholder="1234 Main St"
+                />
+              </div>
+              <div class="col-12">
+                <label for="shipping_address_line_2" class="form-label"
+                  >Address Line 2</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="shipping_address_line_2"
+                  name="shipping_address_line_2"
+                  placeholder="Apartment, studio, or floor"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="shipping_city" class="form-label">City</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="shipping_city"
+                  name="shipping_city"
+                />
+              </div>
+              <div class="col-md-4">
+                <label for="shipping_state_province" class="form-label"
+                  >State/Province</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="shipping_state_province"
+                  name="shipping_state_province"
+                />
+              </div>
+              <div class="col-md-2">
+                <label for="shipping_postal_code" class="form-label"
+                  >ZIP/Postal Code</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="shipping_postal_code"
+                  name="shipping_postal_code"
+                />
+              </div>
+              <div class="col-md-6">
+                <label for="shipping_country" class="form-label">Country</label>
+                <select
+                  class="form-select"
+                  id="shipping_country"
+                  name="shipping_country"
+                >
+                  <option value="">Choose country...</option>
+                  <option value="US">United States</option>
+                  <option value="CA">Canada</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="AU">Australia</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                  <option value="JP">Japan</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Method -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-credit-card me-2"></i>Payment Method
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Demo Mode:</strong> This is a demonstration checkout. No
+              real payment will be processed.
+            </div>
+
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="payment_method"
+                    id="credit_card"
+                    value="credit_card"
+                    checked
+                  />
+                  <label class="form-check-label" for="credit_card">
+                    <i class="fab fa-cc-visa me-1"></i>
+                    <i class="fab fa-cc-mastercard me-1"></i>
+                    <i class="fab fa-cc-amex me-1"></i>
+                    Credit Card (Demo)
+                  </label>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="payment_method"
+                    id="paypal"
+                    value="paypal"
+                  />
+                  <label class="form-check-label" for="paypal">
+                    <i class="fab fa-cc-paypal me-1"></i>
+                    PayPal (Demo)
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mock Credit Card Form -->
+            <div id="creditCardForm" class="mt-3">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="card_number" class="form-label"
+                    >Card Number</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="card_number"
+                    placeholder="4111 1111 1111 1111"
+                    maxlength="19"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="card_expiry" class="form-label"
+                    >Expiry Date</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="card_expiry"
+                    placeholder="MM/YY"
+                    maxlength="5"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="card_cvc" class="form-label">CVC</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="card_cvc"
+                    placeholder="123"
+                    maxlength="4"
+                  />
+                </div>
+                <div class="col-12">
+                  <label for="card_name" class="form-label"
+                    >Cardholder Name</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="card_name"
+                    placeholder="John Doe"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Notes -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-comment me-2"></i>Order Notes (Optional)
+            </h5>
+          </div>
+          <div class="card-body">
+            <textarea
+              class="form-control"
+              name="order_notes"
+              rows="3"
+              placeholder="Special instructions for your order (optional)"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="col-lg-4">
+        <div class="card position-sticky" style="top: 100px">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-receipt me-2"></i>Order Summary
+            </h5>
+          </div>
+          <div class="card-body">
+            <!-- Cart Items -->
+            <div class="mb-3">
+              <h6 class="text-muted mb-2">Items ({{ cart.total_items }})</h6>
+              {% for item in cart.items.all %}
+              <div
+                class="d-flex justify-content-between align-items-center mb-2"
+              >
+                <div class="flex-grow-1">
+                  <div class="fw-medium">{{ item.product.name }}</div>
+                  {% if item.variant %}
+                  <small class="text-muted"
+                    >{{ item.variant.name }}: {{ item.variant.value }}</small
+                  >
+                  {% endif %}
+                  <small class="text-muted d-block"
+                    >Qty: {{ item.quantity }}</small
+                  >
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold">${{ item.total_price }}</div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <hr />
+
+            <!-- Order Totals -->
+            <div class="mb-2 d-flex justify-content-between">
+              <span>Subtotal:</span>
+              <span data-subtotal="{{ cart.total_price|default:0 }}"
+                >${{ cart.total_price }}</span
+              >
+            </div>
+            <div class="mb-2 d-flex justify-content-between">
+              <span>Shipping:</span>
+              <span class="text-success">FREE</span>
+            </div>
+            <div class="mb-2 d-flex justify-content-between">
+              <span>Tax:</span>
+              <span id="tax-amount">$0.00</span>
+            </div>
+            <div class="mb-2 d-flex justify-content-between">
+              <span>Discount:</span>
+              <span class="text-success">$0.00</span>
+            </div>
+
+            <hr />
+
+            <div class="d-flex justify-content-between mb-3">
+              <strong>Total:</strong>
+              <strong class="text-success" id="order-total"
+                >${{ cart.total_price }}</strong
+              >
+            </div>
+
+            <!-- Terms and Conditions -->
+            <div class="form-check mb-3">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="terms_accepted"
+                required
+              />
+              <label class="form-check-label" for="terms_accepted">
+                I agree to the
+                <a href="#" class="text-decoration-none">Terms of Service</a>
+                and <a href="#" class="text-decoration-none">Privacy Policy</a>
+              </label>
+              <div class="invalid-feedback">
+                You must agree to the terms and conditions.
+              </div>
+            </div>
+
+            <!-- Place Order Button -->
+            <div class="d-grid">
+              <button
+                type="submit"
+                class="btn btn-success btn-lg"
+                id="placeOrderBtn"
+              >
+                <i class="fas fa-credit-card me-2"></i>Place Order
+              </button>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="text-center mt-3">
+              <small class="text-muted">
+                <i class="fas fa-lock me-1"></i>
+                Your information is secure and encrypted
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %} {% block extra_scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Form validation
+    const form = document.getElementById("checkoutForm");
+    const placeOrderBtn = document.getElementById("placeOrderBtn");
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (form.checkValidity()) {
+        // Show loading state
+        placeOrderBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin me-2"></i>Processing Order...';
+        placeOrderBtn.disabled = true;
+
+        // Submit form after short delay to show loading state
+        setTimeout(() => {
+          form.submit();
+        }, 1000);
+      }
+
+      form.classList.add("was-validated");
+    });
+
+    // Credit card formatting
+    const cardNumberInput = document.getElementById("card_number");
+    const cardExpiryInput = document.getElementById("card_expiry");
+    const cardCvcInput = document.getElementById("card_cvc");
+
+    if (cardNumberInput) {
+      cardNumberInput.addEventListener("input", function (e) {
+        let value = e.target.value.replace(/\s/g, "").replace(/\D/g, "");
+        let formattedValue = value.match(/.{1,4}/g)?.join(" ") || value;
+        e.target.value = formattedValue;
+      });
+    }
+
+    if (cardExpiryInput) {
+      cardExpiryInput.addEventListener("input", function (e) {
+        let value = e.target.value.replace(/\D/g, "");
+        if (value.length >= 2) {
+          value = value.substring(0, 2) + "/" + value.substring(2, 4);
+        }
+        e.target.value = value;
+      });
+    }
+
+    if (cardCvcInput) {
+      cardCvcInput.addEventListener("input", function (e) {
+        e.target.value = e.target.value.replace(/\D/g, "");
+      });
+    }
+
+    // Payment method toggle
+    const paymentMethods = document.querySelectorAll(
+      'input[name="payment_method"]',
+    );
+    const creditCardForm = document.getElementById("creditCardForm");
+
+    paymentMethods.forEach((method) => {
+      method.addEventListener("change", function () {
+        if (this.value === "credit_card") {
+          creditCardForm.style.display = "block";
+        } else {
+          creditCardForm.style.display = "none";
+        }
+      });
+    });
+  });
+
+  function toggleShippingAddress() {
+    const checkbox = document.getElementById("shipping_same_as_billing");
+    const shippingForm = document.getElementById("shippingAddressForm");
+    const shippingInputs = shippingForm.querySelectorAll("input, select");
+
+    if (checkbox.checked) {
+      shippingForm.style.display = "none";
+      // Clear shipping form values
+      shippingInputs.forEach((input) => {
+        input.value = "";
+        input.removeAttribute("required");
+      });
+    } else {
+      shippingForm.style.display = "block";
+      // Copy billing address to shipping address
+      copyBillingToShipping();
+    }
+  }
+
+  function copyBillingToShipping() {
+    const billingFields = {
+      billing_address_line_1: "shipping_address_line_1",
+      billing_address_line_2: "shipping_address_line_2",
+      billing_city: "shipping_city",
+      billing_state_province: "shipping_state_province",
+      billing_postal_code: "shipping_postal_code",
+      billing_country: "shipping_country",
+    };
+
+    Object.entries(billingFields).forEach(([billingId, shippingId]) => {
+      const billingField = document.getElementById(billingId);
+      const shippingField = document.getElementById(shippingId);
+      if (billingField && shippingField) {
+        shippingField.value = billingField.value;
+      }
+    });
+  }
+
+  // Calculate tax (demo purposes)
+  function calculateTax() {
+    // Get subtotal from the data attribute to avoid template rendering issues
+    const subtotalElement = document.querySelector("[data-subtotal]");
+    const subtotal = subtotalElement
+      ? parseFloat(subtotalElement.dataset.subtotal)
+      : 0;
+    const taxRate = 0.08; // 8% tax rate
+    const tax = subtotal * taxRate;
+    const total = subtotal + tax;
+
+    document.getElementById("tax-amount").textContent = "$" + tax.toFixed(2);
+    document.getElementById("order-total").textContent = "$" + total.toFixed(2);
+  }
+
+  // Calculate tax on page load
+  calculateTax();
+</script>
+{% endblock %}

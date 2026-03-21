@@ -1,0 +1,447 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Shopping Cart -
+ShopHub{% endblock %} {% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <!-- Page Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Shopping Cart</h1>
+        <a
+          href="{% url 'products:product_list' %}"
+          class="btn btn-outline-primary"
+        >
+          <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+        </a>
+      </div>
+
+      {% if cart_items %}
+      <div class="row">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-shopping-cart me-2"></i>
+                Cart Items ({{ cart.total_items }} item{{
+                cart.total_items|pluralize }})
+              </h5>
+            </div>
+            <div class="card-body p-0">
+              {% for item in cart_items %}
+              <div
+                class="cart-item d-flex align-items-center p-3 {% if not forloop.last %}border-bottom{% endif %}"
+              >
+                <!-- Product Image -->
+                <div class="flex-shrink-0 me-3">
+                  {% if item.product.images.first %}
+                  <img
+                    src="{{ item.product.images.first.image.url }}"
+                    alt="{{ item.product.name }}"
+                    class="rounded"
+                    style="width: 80px; height: 80px; object-fit: cover"
+                  />
+                  {% else %}
+                  <div
+                    class="bg-light rounded d-flex align-items-center justify-content-center"
+                    style="width: 80px; height: 80px"
+                  >
+                    <i class="fas fa-image text-muted"></i>
+                  </div>
+                  {% endif %}
+                </div>
+
+                <!-- Product Info -->
+                <div class="flex-grow-1">
+                  <h6 class="mb-1">
+                    <a
+                      href="{% url 'products:product_detail' item.product.slug %}"
+                      class="text-decoration-none"
+                    >
+                      {{ item.product.name }}
+                    </a>
+                  </h6>
+
+                  {% if item.variant %}
+                  <small class="text-muted">
+                    {{ item.variant.name }}: {{ item.variant.value }}
+                  </small>
+                  {% endif %}
+
+                  <div class="mt-2">
+                    <span class="text-success fw-bold"
+                      >${{ item.unit_price }}</span
+                    >
+                    <span class="text-muted ms-2">each</span>
+                  </div>
+                </div>
+
+                <!-- Quantity Controls -->
+                <div class="flex-shrink-0 me-3">
+                  <div class="input-group" style="width: 120px">
+                    <button
+                      class="btn btn-outline-secondary btn-sm quantity-decrease"
+                      type="button"
+                      data-item-id="{{ item.id }}"
+                      data-quantity="{{ item.quantity }}"
+                    >
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <input
+                      type="number"
+                      class="form-control form-control-sm text-center quantity-input"
+                      value="{{ item.quantity }}"
+                      min="1"
+                      data-item-id="{{ item.id }}"
+                      id="quantity-{{ item.id }}"
+                    />
+                    <button
+                      class="btn btn-outline-secondary btn-sm quantity-increase"
+                      type="button"
+                      data-item-id="{{ item.id }}"
+                      data-quantity="{{ item.quantity }}"
+                    >
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Item Total -->
+                <div class="flex-shrink-0 me-3 text-end" style="width: 80px">
+                  <div class="fw-bold" id="item-total-{{ item.id }}">
+                    ${{ item.total_price }}
+                  </div>
+                </div>
+
+                <!-- Remove Button -->
+                <div class="flex-shrink-0">
+                  <form
+                    method="post"
+                    action="{% url 'orders:remove_from_cart' item.id %}"
+                    class="d-inline"
+                  >
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      class="btn btn-outline-danger btn-sm"
+                      onclick="return confirm('Remove this item from cart?');"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Cart Summary -->
+        <div class="col-lg-4">
+          <div class="cart-summary">
+            <h5 class="mb-3">Order Summary</h5>
+
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal:</span>
+              <span id="cart-subtotal">${{ cart.total_price }}</span>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+              <span>Shipping:</span>
+              <span class="text-success">FREE</span>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+              <span>Tax:</span>
+              <span>$0.00</span>
+            </div>
+
+            <hr />
+
+            <div class="d-flex justify-content-between mb-3">
+              <strong>Total:</strong>
+              <strong class="text-success" id="cart-total"
+                >${{ cart.total_price }}</strong
+              >
+            </div>
+
+            <div class="d-grid gap-2">
+              <a
+                href="{% url 'orders:checkout' %}"
+                class="btn btn-success btn-lg"
+              >
+                <i class="fas fa-credit-card me-2"></i>Proceed to Checkout
+              </a>
+
+              <a
+                href="{% url 'products:product_list' %}"
+                class="btn btn-outline-primary"
+              >
+                <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+              </a>
+            </div>
+
+            <!-- Promo Code -->
+            <div class="mt-4">
+              <h6>Have a promo code?</h6>
+              <form class="d-flex">
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Enter code"
+                />
+                <button type="submit" class="btn btn-outline-secondary ms-2">
+                  Apply
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Security Info -->
+          <div class="mt-4 text-center">
+            <div
+              class="d-flex justify-content-center align-items-center text-muted"
+            >
+              <i class="fas fa-lock me-2"></i>
+              <small>Secure SSL encrypted checkout</small>
+            </div>
+            <div class="mt-2">
+              <i class="fab fa-cc-visa fa-2x me-2 text-muted"></i>
+              <i class="fab fa-cc-mastercard fa-2x me-2 text-muted"></i>
+              <i class="fab fa-cc-amex fa-2x me-2 text-muted"></i>
+              <i class="fab fa-cc-paypal fa-2x text-muted"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recently Viewed or Recommended Products -->
+      <section class="mt-5">
+        <h3>You might also like</h3>
+        <div class="row g-4">
+          <!-- This would typically show recommended products -->
+          <div class="col-lg-3 col-md-6">
+            <div class="card product-card">
+              <div class="card-body text-center">
+                <i
+                  class="fas fa-heart text-muted mb-3"
+                  style="font-size: 3rem"
+                ></i>
+                <h6>More products coming soon!</h6>
+                <p class="text-muted small">Check out our product catalog</p>
+                <a
+                  href="{% url 'products:product_list' %}"
+                  class="btn btn-outline-primary btn-sm"
+                >
+                  Browse Products
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {% else %}
+      <!-- Empty Cart -->
+      <div class="text-center py-5">
+        <i
+          class="fas fa-shopping-cart text-muted mb-4"
+          style="font-size: 6rem"
+        ></i>
+        <h2>Your cart is empty</h2>
+        <p class="text-muted mb-4">
+          Looks like you haven't added anything to your cart yet.
+        </p>
+        <a
+          href="{% url 'products:product_list' %}"
+          class="btn btn-primary btn-lg"
+        >
+          <i class="fas fa-shopping-bag me-2"></i>Start Shopping
+        </a>
+      </div>
+
+      <!-- Featured Products for Empty Cart -->
+      <section class="mt-5">
+        <h3 class="text-center mb-4">Featured Products</h3>
+        <div class="row g-4">
+          {% for product in featured_products|slice:":4" %}
+          <div class="col-lg-3 col-md-6">
+            <div class="card product-card h-100">
+              <div class="product-image">
+                {% if product.images.first %}
+                <img
+                  src="{{ product.images.first.image.url }}"
+                  alt="{{ product.name }}"
+                  class="card-img-top"
+                />
+                {% else %}
+                <i class="fas fa-image text-muted"></i>
+                {% endif %}
+              </div>
+              <div class="card-body product-info d-flex flex-column">
+                <a
+                  href="{% url 'products:product_detail' product.slug %}"
+                  class="product-title"
+                >
+                  {{ product.name }}
+                </a>
+                <p class="text-muted small flex-grow-1">
+                  {{ product.description|truncatewords:10 }}
+                </p>
+                <div class="mt-auto">
+                  <div class="product-price">${{ product.price }}</div>
+                  <div class="d-grid mt-2">
+                    <a
+                      href="{% url 'products:product_detail' product.slug %}"
+                      class="btn btn-primary btn-sm"
+                    >
+                      <i class="fas fa-eye me-1"></i> View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="col-12">
+            <p class="text-center text-muted">
+              No featured products available.
+            </p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_scripts %}
+<script>
+  function updateQuantity(itemId, newQuantity) {
+    if (newQuantity < 1) {
+      if (confirm("Remove this item from cart?")) {
+        // Remove item
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = `/orders/cart/remove/${itemId}/`;
+
+        const csrfInput = document.createElement("input");
+        csrfInput.type = "hidden";
+        csrfInput.name = "csrfmiddlewaretoken";
+        csrfInput.value = document.querySelector(
+          "[name=csrfmiddlewaretoken]",
+        ).value;
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
+      }
+      return;
+    }
+
+    // Update quantity via AJAX
+    fetch(`/orders/cart/update/${itemId}/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")
+          .value,
+      },
+      body: `quantity=${newQuantity}`,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Update quantity input
+          document.getElementById(`quantity-${itemId}`).value = data.quantity;
+
+          // Update item total
+          document.getElementById(`item-total-${itemId}`).textContent =
+            `$${parseFloat(data.item_total).toFixed(2)}`;
+
+          // Update cart totals
+          document.getElementById("cart-subtotal").textContent =
+            `$${parseFloat(data.cart_total).toFixed(2)}`;
+          document.getElementById("cart-total").textContent =
+            `$${parseFloat(data.cart_total).toFixed(2)}`;
+
+          // Show success message
+          showAlert(data.message, "success");
+
+          // If quantity is 0, reload page to remove item
+          if (data.quantity === 0) {
+            window.location.reload();
+          }
+        } else {
+          showAlert(data.error || "Error updating cart", "danger");
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        showAlert("Error updating cart", "danger");
+      });
+  }
+
+  function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+             style="top: 100px; right: 20px; z-index: 9999;" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    document.body.insertAdjacentHTML("beforeend", alertHtml);
+
+    // Auto dismiss after 4 seconds
+    setTimeout(() => {
+      const alert = document.querySelector(".alert.position-fixed");
+      if (alert) {
+        alert.remove();
+      }
+    }, 4000);
+  }
+
+  // Update quantity on enter key and add event listeners
+  document.addEventListener("DOMContentLoaded", function () {
+    // Handle quantity input changes
+    document.querySelectorAll(".quantity-input").forEach((input) => {
+      input.addEventListener("change", function () {
+        const itemId = this.dataset.itemId;
+        const newQuantity = parseInt(this.value) || 1;
+        updateQuantity(itemId, newQuantity);
+      });
+
+      input.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          const itemId = this.dataset.itemId;
+          const newQuantity = parseInt(this.value) || 1;
+          updateQuantity(itemId, newQuantity);
+        }
+      });
+    });
+
+    // Handle decrease buttons
+    document.querySelectorAll(".quantity-decrease").forEach((button) => {
+      button.addEventListener("click", function () {
+        const itemId = this.dataset.itemId;
+        const currentQuantity = parseInt(
+          document.getElementById(`quantity-${itemId}`).value,
+        );
+        const newQuantity = Math.max(1, currentQuantity - 1);
+        updateQuantity(itemId, newQuantity);
+      });
+    });
+
+    // Handle increase buttons
+    document.querySelectorAll(".quantity-increase").forEach((button) => {
+      button.addEventListener("click", function () {
+        const itemId = this.dataset.itemId;
+        const currentQuantity = parseInt(
+          document.getElementById(`quantity-${itemId}`).value,
+        );
+        const newQuantity = currentQuantity + 1;
+        updateQuantity(itemId, newQuantity);
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,5 @@
+[bandit]
+# Scan only our application source — never third-party packages or test fixtures.
+targets = accounts,core,orders,products,ecommerce_site
+# Skip low-severity informational issues (assert usage, etc.)
+skips = B101

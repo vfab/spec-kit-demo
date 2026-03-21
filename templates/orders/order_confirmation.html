@@ -1,0 +1,313 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Order Confirmation
+- ShopHub{% endblock %} {% block content %}
+<div class="container mt-4">
+  <!-- Success Header -->
+  <div class="row mb-5">
+    <div class="col-12 text-center">
+      <div class="success-icon mb-3">
+        <i class="fas fa-check-circle text-success" style="font-size: 4rem"></i>
+      </div>
+      <h1 class="text-success mb-2">Order Confirmed!</h1>
+      <p class="lead">
+        Thank you for your order. We'll send you shipping confirmation when your
+        order ships.
+      </p>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Order Details -->
+    <div class="col-lg-8">
+      <!-- Order Summary -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Order Summary</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Order Number:</strong></p>
+              <p class="text-muted">{{ order.order_number }}</p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Order Date:</strong></p>
+              <p class="text-muted">
+                {{ order.created_at|date:"F d, Y g:i A" }}
+              </p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Status:</strong></p>
+              <span class="badge bg-warning"
+                >{{ order.get_status_display }}</span
+              >
+            </div>
+            <div class="col-md-6">
+              <p class="mb-1"><strong>Payment Status:</strong></p>
+              <span class="badge bg-info"
+                >{{ order.get_payment_status_display }}</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Items -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-box me-2"></i>Order Items</h5>
+        </div>
+        <div class="card-body">
+          {% for item in order_items %}
+          <div
+            class="row align-items-center mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}"
+          >
+            <div class="col-md-2">
+              {% if item.product.image %}
+              <img
+                src="{{ item.product.image.url }}"
+                alt="{{ item.product.name }}"
+                class="img-fluid rounded"
+              />
+              {% else %}
+              <div
+                class="bg-light rounded d-flex align-items-center justify-content-center"
+                style="height: 80px"
+              >
+                <i class="fas fa-image text-muted"></i>
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <h6 class="mb-1">{{ item.product.name }}</h6>
+              {% if item.variant %}
+              <p class="text-muted mb-1">
+                <small>{{ item.variant.name }}: {{ item.variant.value }}</small>
+              </p>
+              {% endif %}
+              <p class="text-muted mb-0">
+                <small>SKU: {{ item.product.sku }}</small>
+              </p>
+            </div>
+            <div class="col-md-2 text-center">
+              <p class="mb-0">Qty: {{ item.quantity }}</p>
+            </div>
+            <div class="col-md-2 text-end">
+              <p class="mb-0 fw-bold">${{ item.total_price }}</p>
+              <small class="text-muted">${{ item.price }} each</small>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Shipping & Billing Info -->
+      <div class="row">
+        <!-- Shipping Address -->
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="card-header">
+              <h6 class="mb-0">
+                <i class="fas fa-shipping-fast me-2"></i>Shipping Address
+              </h6>
+            </div>
+            <div class="card-body">
+              <address class="mb-0">
+                <strong>{{ order.full_name }}</strong><br />
+                {% if order.shipping_same_as_billing %} {{
+                order.billing_address_line_1 }}<br />
+                {% if order.billing_address_line_2 %}{{
+                order.billing_address_line_2 }}<br />{% endif %} {{
+                order.billing_city }}, {{ order.billing_state_province }} {{
+                order.billing_postal_code }}<br />
+                {{ order.billing_country }} {% else %} {{
+                order.shipping_address_line_1 }}<br />
+                {% if order.shipping_address_line_2 %}{{
+                order.shipping_address_line_2 }}<br />{% endif %} {{
+                order.shipping_city }}, {{ order.shipping_state_province }} {{
+                order.shipping_postal_code }}<br />
+                {{ order.shipping_country }} {% endif %}
+              </address>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billing Address -->
+        <div class="col-md-6 mb-4">
+          <div class="card h-100">
+            <div class="card-header">
+              <h6 class="mb-0">
+                <i class="fas fa-credit-card me-2"></i>Billing Address
+              </h6>
+            </div>
+            <div class="card-body">
+              <address class="mb-0">
+                <strong>{{ order.full_name }}</strong><br />
+                {{ order.billing_address_line_1 }}<br />
+                {% if order.billing_address_line_2 %}{{
+                order.billing_address_line_2 }}<br />{% endif %} {{
+                order.billing_city }}, {{ order.billing_state_province }} {{
+                order.billing_postal_code }}<br />
+                {{ order.billing_country }}
+              </address>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Totals & Actions -->
+    <div class="col-lg-4">
+      <div class="card position-sticky" style="top: 100px">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="fas fa-calculator me-2"></i>Order Total
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal:</span>
+            <span>${{ order.subtotal }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Tax:</span>
+            <span>${{ order.tax_amount }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Shipping:</span>
+            <span class="text-success">FREE</span>
+          </div>
+          {% if order.discount_amount > 0 %}
+          <div class="d-flex justify-content-between mb-2">
+            <span>Discount:</span>
+            <span class="text-success">-${{ order.discount_amount }}</span>
+          </div>
+          {% endif %}
+
+          <hr />
+
+          <div class="d-flex justify-content-between mb-3">
+            <strong>Total:</strong>
+            <strong class="text-success">${{ order.total_amount }}</strong>
+          </div>
+
+          <!-- Payment Method -->
+          <div class="mb-3">
+            <small class="text-muted">Payment Method:</small><br />
+            <span class="badge bg-secondary">
+              {% if order.payment_method == 'credit_card' %}
+              <i class="fas fa-credit-card me-1"></i>Credit Card {% elif
+              order.payment_method == 'paypal' %}
+              <i class="fab fa-paypal me-1"></i>PayPal {% else %} {{
+              order.payment_method|title }} {% endif %}
+            </span>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="mb-3">
+            <small class="text-muted">Contact Information:</small><br />
+            <span>{{ order.email }}</span><br />
+            {% if order.phone_number %}
+            <span>{{ order.phone_number }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Actions -->
+          <div class="d-grid gap-2">
+            {% if user.is_authenticated %}
+            <a
+              href="{% url 'orders:order_detail' order_number=order.order_number %}"
+              class="btn btn-outline-primary"
+            >
+              <i class="fas fa-eye me-2"></i>View Order Details
+            </a>
+            <a
+              href="{% url 'orders:order_list' %}"
+              class="btn btn-outline-secondary"
+            >
+              <i class="fas fa-list me-2"></i>View All Orders
+            </a>
+            {% endif %}
+            <a href="{% url 'products:home' %}" class="btn btn-primary">
+              <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Notes -->
+  {% if order.order_notes %}
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="alert alert-info">
+        <h6><i class="fas fa-comment me-2"></i>Order Notes:</h6>
+        <p class="mb-0">{{ order.order_notes }}</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Next Steps -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="alert alert-success">
+        <h6><i class="fas fa-info-circle me-2"></i>What happens next?</h6>
+        <ul class="mb-0">
+          <li>You'll receive an order confirmation email shortly</li>
+          <li>We'll send you shipping updates as your order progresses</li>
+          <li>Questions? Contact us at <strong>support@shophub.com</strong></li>
+          {% if user.is_authenticated %}
+          <li>
+            Track your order anytime in your
+            <a href="{% url 'orders:order_list' %}">order history</a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_styles %}
+<style>
+  .success-icon {
+    animation: bounce 1s ease-in-out;
+  }
+
+  @keyframes bounce {
+    0%,
+    60%,
+    75%,
+    90%,
+    100% {
+      transform: translateY(0);
+    }
+    15% {
+      transform: translateY(-10px);
+    }
+    30% {
+      transform: translateY(-5px);
+    }
+    45% {
+      transform: translateY(-2px);
+    }
+  }
+
+  .card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 8px;
+  }
+
+  .badge {
+    font-size: 0.8em;
+  }
+
+  address {
+    line-height: 1.6;
+  }
+</style>
+{% endblock %}
