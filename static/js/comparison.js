@@ -9,6 +9,16 @@
 
   const ADD_URL = "/products/compare/add/";
 
+  /**
+   * Escape user-supplied text before injecting into innerHTML.
+   * Prevents XSS when product names contain HTML special characters.
+   */
+  function escapeHtml(str) {
+    const d = document.createElement("div");
+    d.appendChild(document.createTextNode(str));
+    return d.innerHTML;
+  }
+
   function getCSRFToken() {
     const cookie = document.cookie
       .split(";")
@@ -83,7 +93,7 @@
           showToast('<i class="fas fa-times me-1"></i> Invalid product.', "danger");
         } else {
           showToast(
-            `<i class="fas fa-check me-1"></i> "${productName}" added to comparison.`,
+            `<i class="fas fa-check me-1"></i> &ldquo;${escapeHtml(productName)}&rdquo; added to comparison.`,
             "success"
           );
           // Update the compare widget by reloading the page silently

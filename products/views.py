@@ -335,15 +335,22 @@ class AutocompleteView(View):
         q = request.GET.get("q", "").strip()
         if len(q) < 2:
             return JsonResponse({"results": []})
-        products = Product.objects.filter(name__icontains=q, is_active=True).only(
-            "name", "slug"
-        )[:10]
+        products = (
+            Product.objects.filter(name__icontains=q, is_active=True)
+            .only("name", "slug")[:10]
+        )
         results = [{"name": p.name, "url": p.get_absolute_url()} for p in products]
         return JsonResponse({"results": results})
 
 
 class ReviewSubmitView(LoginRequiredMixin, FormView):
-    """Handle review submission for a product (T021)."""
+    """Handle review submission for a product (T021).
+
+    Only POST is accepted — the form is rendered inside product_detail.html,
+    never via a direct GET to this URL.
+    """
+
+    http_method_names = ["post", "options"]
 
     def get_form_class(self):
         from .forms import ReviewSubmissionForm  # noqa: PLC0415
@@ -414,7 +421,9 @@ class ComparisonAddView(View):
 
         product = get_object_or_404(Product, pk=product_id, is_active=True)
 
-        comparison = request.session.get("comparison", {"pks": [], "category_id": None})
+        comparison = request.session.get(
+            "comparison", {"pks": [], "category_id": None}
+        )
         pks = comparison.get("pks", [])
         category_id = comparison.get("category_id")
 
@@ -451,8 +460,16 @@ class ComparisonRemoveView(View):
         ):
             referrer = "/"
 
+        product_id_raw = request.POST.get("product_id", "")
+
+        # "clear" sentinel: wipe the entire comparison list at once.
+        if product_id_raw == "clear":
+            request.session["comparison"] = {"pks": [], "category_id": None}
+            request.session.modified = True
+            return redirect(referrer)
+
         try:
-            product_id = int(request.POST.get("product_id", ""))
+            product_id = int(product_id_raw)
         except (ValueError, TypeError):
             return redirect(referrer)
 

@@ -10,9 +10,10 @@
     <form method="post" action="{% url 'products:compare_remove' %}" class="d-inline">
       {% csrf_token %}
       <input type="hidden" name="product_id" value="clear">
-      <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="fas fa-times me-1"></i> Clear All & Back to Products
-      </a>
+      <input type="hidden" name="next" value="{% url 'products:product_list' %}">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-times me-1"></i> Clear All &amp; Back to Products
+      </button>
     </form>
     {% endif %}
   </div>

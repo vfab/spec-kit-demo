@@ -170,4 +170,3 @@ All architectural choices use existing Django patterns already established in Ep
 - Cache invalidation (same signal pattern in `products/models.py`)
 - Open redirect guard (same `url_has_allowed_host_and_scheme` as `orders/views.py`)
 - `LoginRequiredMixin` (same as `orders/views.py` checkout/order views)
-

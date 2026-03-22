@@ -124,7 +124,7 @@ product_b = ProductFactory(is_active=True, category=cat)
 # Add first product
 response = client.post("/products/compare/add/", {"product_id": product_a.pk})
 assert response.status_code == 302
-# Add second product  
+# Add second product
 response = client.post("/products/compare/add/", {"product_id": product_b.pk})
 assert response.status_code == 302
 # View comparison
