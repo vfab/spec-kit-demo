@@ -1,12 +1,14 @@
 """Views for the orders app — cart, checkout, and order history."""
 
 import logging
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Count, Prefetch
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import DetailView, ListView, TemplateView, View
 
 from accounts.models import UserProfile
@@ -78,11 +80,21 @@ class AddToCartView(View):
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return JsonResponse({"success": False, "message": error_msg}, status=400)
         messages.error(request, error_msg)
-        return redirect(request.META.get("HTTP_REFERER", "products:product_list"))
+        # Use the Referer only if it is a same-host URL to prevent open redirects
+        # (CWE-601). url_has_allowed_host_and_scheme is Django's canonical helper.
+        referer = request.META.get("HTTP_REFERER", "")
+        if referer and url_has_allowed_host_and_scheme(
+            referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            return redirect(referer)
+        return redirect("products:product_list")
 
     def post(self, request, product_id):
         product = get_object_or_404(Product, id=product_id, is_active=True)
-        quantity = int(request.POST.get("quantity", 1))
+        try:
+            quantity = max(1, int(request.POST.get("quantity", 1)))
+        except (TypeError, ValueError):
+            quantity = 1
         variant_id = request.POST.get("variant_id")
 
         # Get variant if specified
@@ -149,7 +161,11 @@ class UpdateCartView(View):
 
     def post(self, request, item_id):
         cart_item = get_object_or_404(CartItem, id=item_id)
-        quantity = int(request.POST.get("quantity", 1))
+        try:
+            quantity = int(request.POST.get("quantity", 1))
+        except (TypeError, ValueError):
+            messages.error(request, "Invalid quantity.")
+            return redirect("orders:cart")
 
         # Verify ownership
         if (request.user.is_authenticated and cart_item.cart.user != request.user) or (

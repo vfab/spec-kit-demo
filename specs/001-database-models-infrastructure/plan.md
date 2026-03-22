@@ -1,6 +1,6 @@
 # Implementation Plan: Database Models & Infrastructure (ShopHub Epic 1)
 
-**Branch**: `001-database-models-infrastructure` | **Date**: 2026-03-20 | **Spec**: [spec.md](spec.md)  
+**Branch**: `001-database-models-infrastructure` | **Date**: 2026-03-20 | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `/specs/001-database-models-infrastructure/spec.md`
 
 ---
@@ -17,7 +17,7 @@ models being in place before any view, form, or API code is written.
 
 ## Technical Context
 
-**Language/Version**: Python 3.12  
+**Language/Version**: Python 3.12
 **Primary Dependencies**:
 - Django 5.2.x
 - python-decouple (env config)
@@ -36,12 +36,12 @@ models being in place before any view, form, or API code is written.
 - bandit (SAST, -ll threshold)
 - pip-audit (CVE scanning)
 
-**Storage**: SQLite 3.35+ (dev/CI via `DATABASE_URL=sqlite:///db.sqlite3`) / PostgreSQL 15 (prod)  
-**Testing**: pytest + pytest-django + pytest-cov; `DJANGO_SETTINGS_MODULE=ecommerce_site.settings_test`  
-**Target Platform**: Linux server / Docker (Dockerfile + docker-compose.yml)  
-**Project Type**: web-service  
-**Performance Goals**: ≤200ms p95 on model queries; all FK and slug fields carry explicit DB indexes  
-**Constraints**: Coverage ≥ 95%; all 7 pre-commit gate commands exit 0 before any commit  
+**Storage**: SQLite 3.35+ (dev/CI via `DATABASE_URL=sqlite:///db.sqlite3`) / PostgreSQL 15 (prod)
+**Testing**: pytest + pytest-django + pytest-cov; `DJANGO_SETTINGS_MODULE=ecommerce_site.settings_test`
+**Target Platform**: Linux server / Docker (Dockerfile + docker-compose.yml)
+**Project Type**: web-service
+**Performance Goals**: ≤200ms p95 on model queries; all FK and slug fields carry explicit DB indexes
+**Constraints**: Coverage ≥ 95%; all 7 pre-commit gate commands exit 0 before any commit
 
 ---
 

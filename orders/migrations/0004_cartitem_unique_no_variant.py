@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0003_phone_number_validator'),
-        ('products', '0002_image_upload_validators'),
+        ("orders", "0003_phone_number_validator"),
+        ("products", "0002_image_upload_validators"),
     ]
 
     operations = [
         migrations.AddConstraint(
-            model_name='cartitem',
-            constraint=models.UniqueConstraint(condition=models.Q(('variant__isnull', True)), fields=('cart', 'product'), name='unique_cart_product_no_variant'),
+            model_name="cartitem",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("variant__isnull", True)),
+                fields=("cart", "product"),
+                name="unique_cart_product_no_variant",
+            ),
         ),
     ]

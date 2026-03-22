@@ -15,8 +15,9 @@ For lists, we create N items and assert the total query count stays constant
 (O(1)) rather than growing with N.
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 
 from django.test import Client
 

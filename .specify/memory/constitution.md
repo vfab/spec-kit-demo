@@ -17,6 +17,17 @@ All runtime configuration is read from environment variables (or a `.env` file v
 ### V. Incremental, Branch-Based Development
 All work happens on a feature branch (`fix/`, `feat/`, `chore/`, `test/`). Changes are implemented incrementally, validated fully, and committed with descriptive messages referencing EPIC numbers and TODO items. The main branch only receives fully validated, passing code.
 
+### VI. Provide Updates on Progress
+- Always tell me what task you are working on, what goal you are trying to achieve, and provide updates as you progress.  For example, I am working on task X which is needed to complete Y, and I am 80% toward completing Y.
+- Let me know whenever it is time for me to click the Keep button.
+- Let me know when it is a good time to commit and/or push changes to GitHub.
+
+<!-- ### VII. Manage the Terminal
+- Whenever you run a command in the terminal, pipe the output to a file, `output.txt`, that you can read from.
+- You should read the `output.txt` file to see the results of your commands.
+- Make sure to overwrite each time so that it doesn't grow too big. -->
+
+
 ## Technical Standards
 
 ### Technology Stack

@@ -181,7 +181,7 @@ class TestProductVariantModel:
         assert variant.value == "Large - Blue"
         assert variant.price_adjustment == Decimal("5.00")
         assert variant.product == product
-        assert str(variant) == "Test Product - Size: Large - Blue"
+        assert str(variant) == f"{product.name} - Size: Large - Blue"
 
     @pytest.mark.django_db
     def test_variant_final_price(self, product):

@@ -197,7 +197,7 @@ class TestCartPersistence:
     def test_authenticated_user_cart_persistence(self, client, user, product):
         """Test cart persists across sessions for authenticated users"""
         # Login and add item to cart
-        client.login(username=user.username, password="testpass123")
+        client.force_login(user)
 
         response = client.post(
             reverse("orders:add_to_cart", args=[product.id]), {"quantity": 2}
@@ -208,7 +208,7 @@ class TestCartPersistence:
         client.post(reverse("accounts:logout"))
 
         # Login again
-        client.login(username=user.username, password="testpass123")
+        client.force_login(user)
 
         # Cart should still contain items
         response = client.get(reverse("orders:cart"))
@@ -447,7 +447,7 @@ class TestPerformance:
         # This test would require more complex setup for true concurrency testing
         # For now, we'll test sequential operations that could cause conflicts
 
-        client.login(username=user.username, password="testpass123")
+        client.force_login(user)
 
         # Multiple additions to cart
         for i in range(5):

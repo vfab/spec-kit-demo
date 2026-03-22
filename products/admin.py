@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Category, Product, ProductImage, ProductVariant
+from .models import Category, Product, ProductImage, ProductReview, ProductVariant
 
 
 @admin.register(Category)
@@ -123,3 +123,14 @@ class ProductVariantAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("product")
+
+
+@admin.register(ProductReview)
+class ProductReviewAdmin(admin.ModelAdmin):
+    list_display = ("product", "user", "rating", "is_approved", "created_at")
+    list_filter = ("rating", "is_approved", "created_at")
+    search_fields = ("title", "body", "user__username", "product__name")
+    readonly_fields = ("created_at", "updated_at")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("product", "user")

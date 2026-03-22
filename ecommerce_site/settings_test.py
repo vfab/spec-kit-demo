@@ -11,6 +11,21 @@ Usage (automatic via pytest.ini):
 from .settings import *  # noqa: F401, F403
 
 # ---------------------------------------------------------------------------
+# Database — use in-memory SQLite so tests never touch db.sqlite3 on disk.
+# ---------------------------------------------------------------------------
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",
+    }
+}
+
+# Fast password hashing in tests — do not use in production
+PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+DEBUG = True
+
+# ---------------------------------------------------------------------------
 # Axes — disable lockout in the test suite.
 # axes.backends.AxesStandaloneBackend.authenticate() requires a real HTTP
 # request object; bare client.login() / authenticate() calls in tests do not

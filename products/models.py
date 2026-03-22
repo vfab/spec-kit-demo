@@ -7,7 +7,11 @@ from PIL import Image
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.core.validators import FileExtensionValidator
+from django.core.validators import (
+    FileExtensionValidator,
+    MaxValueValidator,
+    MinValueValidator,
+)
 from django.db import models
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
@@ -308,6 +312,40 @@ class ProductVariant(models.Model):
     @property
     def final_price(self):
         return self.product.price + self.price_adjustment
+
+
+class ProductReview(models.Model):
+    """
+    Customer reviews for products (FR-017).
+    """
+
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="reviews"
+    )
+    user = models.ForeignKey(
+        "auth.User", on_delete=models.CASCADE, related_name="reviews"
+    )
+    rating = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
+    )
+    title = models.CharField(max_length=200, blank=True)
+    body = models.TextField()
+    is_approved = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Product Review"
+        verbose_name_plural = "Product Reviews"
+        unique_together = [["product", "user"]]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Review by {self.user} on {self.product} ({self.rating}/5)"
 
 
 # ---------------------------------------------------------------------------

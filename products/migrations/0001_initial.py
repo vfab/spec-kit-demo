@@ -8,114 +8,220 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Category',
+            name="Category",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200, unique=True)),
-                ('slug', models.SlugField(blank=True, max_length=200, unique=True)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('image', models.ImageField(blank=True, null=True, upload_to='categories/')),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='children', to='products.category')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=200, unique=True)),
+                ("slug", models.SlugField(blank=True, max_length=200, unique=True)),
+                ("description", models.TextField(blank=True, null=True)),
+                (
+                    "image",
+                    models.ImageField(blank=True, null=True, upload_to="categories/"),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "parent",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="children",
+                        to="products.category",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Category',
-                'verbose_name_plural': 'Categories',
-                'ordering': ['name'],
+                "verbose_name": "Category",
+                "verbose_name_plural": "Categories",
+                "ordering": ["name"],
             },
         ),
         migrations.CreateModel(
-            name='Product',
+            name="Product",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200)),
-                ('slug', models.SlugField(blank=True, max_length=200, unique=True)),
-                ('description', models.TextField()),
-                ('short_description', models.CharField(blank=True, max_length=500, null=True)),
-                ('price', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('compare_price', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
-                ('cost_price', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True)),
-                ('sku', models.CharField(max_length=100, unique=True)),
-                ('stock_quantity', models.PositiveIntegerField(default=0)),
-                ('track_inventory', models.BooleanField(default=True)),
-                ('allow_backorders', models.BooleanField(default=False)),
-                ('weight', models.DecimalField(blank=True, decimal_places=2, max_digits=8, null=True)),
-                ('dimensions_length', models.DecimalField(blank=True, decimal_places=2, max_digits=8, null=True)),
-                ('dimensions_width', models.DecimalField(blank=True, decimal_places=2, max_digits=8, null=True)),
-                ('dimensions_height', models.DecimalField(blank=True, decimal_places=2, max_digits=8, null=True)),
-                ('meta_title', models.CharField(blank=True, max_length=200, null=True)),
-                ('meta_description', models.CharField(blank=True, max_length=500, null=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('is_featured', models.BooleanField(default=False)),
-                ('is_digital', models.BooleanField(default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='products', to='products.category')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=200)),
+                ("slug", models.SlugField(blank=True, max_length=200, unique=True)),
+                ("description", models.TextField()),
+                (
+                    "short_description",
+                    models.CharField(blank=True, max_length=500, null=True),
+                ),
+                ("price", models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "compare_price",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=10, null=True
+                    ),
+                ),
+                (
+                    "cost_price",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=10, null=True
+                    ),
+                ),
+                ("sku", models.CharField(max_length=100, unique=True)),
+                ("stock_quantity", models.PositiveIntegerField(default=0)),
+                ("track_inventory", models.BooleanField(default=True)),
+                ("allow_backorders", models.BooleanField(default=False)),
+                (
+                    "weight",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "dimensions_length",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "dimensions_width",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "dimensions_height",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=8, null=True
+                    ),
+                ),
+                ("meta_title", models.CharField(blank=True, max_length=200, null=True)),
+                (
+                    "meta_description",
+                    models.CharField(blank=True, max_length=500, null=True),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                ("is_featured", models.BooleanField(default=False)),
+                ("is_digital", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="products",
+                        to="products.category",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Product',
-                'verbose_name_plural': 'Products',
-                'ordering': ['-created_at'],
+                "verbose_name": "Product",
+                "verbose_name_plural": "Products",
+                "ordering": ["-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='ProductImage',
+            name="ProductImage",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('image', models.ImageField(upload_to='products/')),
-                ('alt_text', models.CharField(blank=True, max_length=200, null=True)),
-                ('is_primary', models.BooleanField(default=False)),
-                ('sort_order', models.PositiveIntegerField(default=0)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='images', to='products.product')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("image", models.ImageField(upload_to="products/")),
+                ("alt_text", models.CharField(blank=True, max_length=200, null=True)),
+                ("is_primary", models.BooleanField(default=False)),
+                ("sort_order", models.PositiveIntegerField(default=0)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "product",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="images",
+                        to="products.product",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Product Image',
-                'verbose_name_plural': 'Product Images',
-                'ordering': ['sort_order', '-created_at'],
+                "verbose_name": "Product Image",
+                "verbose_name_plural": "Product Images",
+                "ordering": ["sort_order", "-created_at"],
             },
         ),
         migrations.CreateModel(
-            name='ProductVariant',
+            name="ProductVariant",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('value', models.CharField(max_length=100)),
-                ('price_adjustment', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('sku_suffix', models.CharField(blank=True, max_length=50, null=True)),
-                ('stock_quantity', models.PositiveIntegerField(default=0)),
-                ('is_active', models.BooleanField(default=True)),
-                ('sort_order', models.PositiveIntegerField(default=0)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('product', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='variants', to='products.product')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("value", models.CharField(max_length=100)),
+                (
+                    "price_adjustment",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                ("sku_suffix", models.CharField(blank=True, max_length=50, null=True)),
+                ("stock_quantity", models.PositiveIntegerField(default=0)),
+                ("is_active", models.BooleanField(default=True)),
+                ("sort_order", models.PositiveIntegerField(default=0)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "product",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="variants",
+                        to="products.product",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Product Variant',
-                'verbose_name_plural': 'Product Variants',
-                'ordering': ['sort_order', 'name', 'value'],
+                "verbose_name": "Product Variant",
+                "verbose_name_plural": "Product Variants",
+                "ordering": ["sort_order", "name", "value"],
             },
         ),
         migrations.AddIndex(
-            model_name='product',
-            index=models.Index(fields=['slug'], name='products_pr_slug_3edc0c_idx'),
+            model_name="product",
+            index=models.Index(fields=["slug"], name="products_pr_slug_3edc0c_idx"),
         ),
         migrations.AddIndex(
-            model_name='product',
-            index=models.Index(fields=['sku'], name='products_pr_sku_ca0cdc_idx'),
+            model_name="product",
+            index=models.Index(fields=["sku"], name="products_pr_sku_ca0cdc_idx"),
         ),
         migrations.AddIndex(
-            model_name='product',
-            index=models.Index(fields=['is_active', '-created_at'], name='products_pr_is_acti_645007_idx'),
+            model_name="product",
+            index=models.Index(
+                fields=["is_active", "-created_at"],
+                name="products_pr_is_acti_645007_idx",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='productvariant',
-            unique_together={('product', 'name', 'value')},
+            name="productvariant",
+            unique_together={("product", "name", "value")},
         ),
     ]

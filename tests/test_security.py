@@ -358,6 +358,7 @@ class TestSQLInjectionRobustness:
     def test_order_number_injection(self, client):
         """Injection payloads in the order confirmation URL never cause a 500."""
         import urllib.parse
+
         from django.contrib.auth.models import User
 
         user = User.objects.create_user(username="sqltestuser", password="Secure1Pass!")
@@ -396,6 +397,7 @@ class TestORMUsageDocumentation:
         prefixed with '-').  No entry contains SQL metacharacters.
         """
         import re
+
         from products.views import ProductListView
 
         safe_pattern = re.compile(r"^-?[a-z_]+$")
@@ -410,6 +412,7 @@ class TestORMUsageDocumentation:
         never access another user's orders via URL manipulation.
         """
         import inspect
+
         from orders.views import OrderDetailView
 
         source = inspect.getsource(OrderDetailView.get_queryset)
@@ -423,6 +426,7 @@ class TestORMUsageDocumentation:
         deleting or modifying items.
         """
         import inspect
+
         from orders.views import RemoveFromCartView, UpdateCartView
 
         for view_cls in (RemoveFromCartView, UpdateCartView):

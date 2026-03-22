@@ -1,5 +1,6 @@
 # Core Django requirements
 Django==5.2.12
+gunicorn==23.0.0
 python-decouple==3.8
 Pillow==12.1.1
 psycopg2-binary==2.9.9

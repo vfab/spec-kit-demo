@@ -7,3 +7,5 @@ exclude =
     __pycache__,
     .git,
     *.egg-info
+per-file-ignores =
+    */migrations/*.py: E501

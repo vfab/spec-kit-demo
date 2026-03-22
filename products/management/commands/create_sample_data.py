@@ -639,7 +639,7 @@ class Command(BaseCommand):
                 first_name=user_data["first_name"],
                 last_name=user_data["last_name"],
                 # In production, use proper password generation
-                password="samplepass123",
+                password="samplepass123",  # nosec B106
             )
 
             # Update profile (should be created automatically by signal)

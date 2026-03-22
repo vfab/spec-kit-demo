@@ -6,20 +6,24 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('products', '0002_image_upload_validators'),
+        ("products", "0002_image_upload_validators"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='category',
-            index=models.Index(fields=['slug'], name='products_ca_slug_da4386_idx'),
+            model_name="category",
+            index=models.Index(fields=["slug"], name="products_ca_slug_da4386_idx"),
         ),
         migrations.AddIndex(
-            model_name='category',
-            index=models.Index(fields=['is_active', 'name'], name='products_ca_is_acti_5a5180_idx'),
+            model_name="category",
+            index=models.Index(
+                fields=["is_active", "name"], name="products_ca_is_acti_5a5180_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='productimage',
-            index=models.Index(fields=['product', 'is_primary'], name='products_pr_product_1b7905_idx'),
+            model_name="productimage",
+            index=models.Index(
+                fields=["product", "is_primary"], name="products_pr_product_1b7905_idx"
+            ),
         ),
     ]

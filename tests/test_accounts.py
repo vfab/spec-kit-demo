@@ -240,8 +240,9 @@ class TestAccountViews:
         assert response.status_code == 200
 
     @pytest.mark.django_db
-    def test_login_view_post_valid(self, client, user):
+    def test_login_view_post_valid(self, client):
         """Test login with valid credentials"""
+        User.objects.create_user(username="testuser", password="testpass123")
         response = client.post(
             reverse("accounts:login"),
             {"username": "testuser", "password": "testpass123"},

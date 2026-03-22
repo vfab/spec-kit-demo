@@ -1,6 +1,6 @@
 # Data Model: ShopHub — Epic 1 (Database Models & Infrastructure)
 
-**Branch**: `001-database-models-infrastructure` | **Date**: 2026-03-20  
+**Branch**: `001-database-models-infrastructure` | **Date**: 2026-03-20
 **Source**: Reverse-engineered from `copilot-plan-agent-build` with improvements noted.
 
 ---
@@ -50,7 +50,7 @@ OrderItem ──FK──> ProductVariant (nullable)
 
 ### 1. `accounts.UserProfile`
 
-Extends Django's built-in `User` via OneToOne.  
+Extends Django's built-in `User` via OneToOne.
 Auto-created by `post_save` signal on `User`.
 
 | Field | Type | Constraints | Index |
@@ -70,7 +70,7 @@ Auto-created by `post_save` signal on `User`.
 | `created_at` | DateTimeField | auto_now_add | — |
 | `updated_at` | DateTimeField | auto_now | — |
 
-**Properties**: `full_name`, `full_address`  
+**Properties**: `full_name`, `full_address`
 **Meta**: `ordering=["-created_at"]`
 
 ---
@@ -91,7 +91,7 @@ Self-referential hierarchy (depth ≤ 5 recommended).
 | `created_at` | DateTimeField | auto_now_add | — |
 | `updated_at` | DateTimeField | auto_now | — |
 
-**Methods**: `save()` auto-slugifies `name`; `get_absolute_url()`  
+**Methods**: `save()` auto-slugifies `name`; `get_absolute_url()`
 **Meta**: `ordering=["name"]`; indexes on `slug`, `(is_active, name)`
 
 ---
@@ -127,9 +127,9 @@ Core product entity.
 | `created_at` | DateTimeField | auto_now_add | — |
 | `updated_at` | DateTimeField | auto_now | — |
 
-**Properties**: `is_on_sale`, `discount_percentage`, `is_in_stock`, `main_image`  
-**Methods**: `save()` auto-slugifies; `get_absolute_url()`  
-**Meta**: `ordering=["-created_at"]`; indexes on `slug`, `sku`, `(is_active, -created_at)`  
+**Properties**: `is_on_sale`, `discount_percentage`, `is_in_stock`, `main_image`
+**Methods**: `save()` auto-slugifies; `get_absolute_url()`
+**Meta**: `ordering=["-created_at"]`; indexes on `slug`, `sku`, `(is_active, -created_at)`
 **Signals**: `post_save`/`post_delete` → cache invalidation
 
 ---
@@ -148,7 +148,7 @@ Multiple images per product; one marked primary.
 | `sort_order` | PositiveIntegerField | default=0 | — |
 | `created_at` | DateTimeField | auto_now_add | — |
 
-**Methods**: `save()` enforces single primary per product, triggers `resize_image()`; `resize_image()` uses Pillow 800×800 max, preserves PNG/WebP transparency  
+**Methods**: `save()` enforces single primary per product, triggers `resize_image()`; `resize_image()` uses Pillow 800×800 max, preserves PNG/WebP transparency
 **Meta**: `ordering=["sort_order", "-created_at"]`; index on `(product, is_primary)`
 
 ---
@@ -170,8 +170,8 @@ Attribute-value pairs per product (e.g. "Size / Large").
 | `sort_order` | PositiveIntegerField | default=0 | — |
 | `created_at` | DateTimeField | auto_now_add | — |
 
-**Properties**: `full_sku` (product.sku + sku_suffix), `final_price` (product.price + price_adjustment)  
-**Meta**: `ordering=["sort_order", "name", "value"]`; `unique_together=["product", "name", "value"]`  
+**Properties**: `full_sku` (product.sku + sku_suffix), `final_price` (product.price + price_adjustment)
+**Meta**: `ordering=["sort_order", "name", "value"]`; `unique_together=["product", "name", "value"]`
 **Signals**: `post_save`/`post_delete` → parent product cache invalidation
 
 ---
@@ -208,8 +208,8 @@ Session-based for anonymous users; user-linked for authenticated users.
 | `created_at` | DateTimeField | auto_now_add | — |
 | `updated_at` | DateTimeField | auto_now | — |
 
-**Properties**: `total_items`, `total_price` (both prefetch-cache-aware)  
-**Methods**: `clear()`  
+**Properties**: `total_items`, `total_price` (both prefetch-cache-aware)
+**Methods**: `clear()`
 **Meta**: `ordering=["-updated_at"]`
 
 ---
@@ -228,7 +228,7 @@ Line items within a cart.
 | `created_at` | DateTimeField | auto_now_add | — |
 | `updated_at` | DateTimeField | auto_now | — |
 
-**Properties**: `unit_price` (variant.final_price or product.price), `total_price`  
+**Properties**: `unit_price` (variant.final_price or product.price), `total_price`
 **Meta**: `unique_together=["cart", "product", "variant"]`; additional `UniqueConstraint` for null-variant case (prevents duplicate base-product rows); index on `(cart, -created_at)`
 
 ---
@@ -274,8 +274,8 @@ Customer order with embedded billing/shipping address snapshot.
 | `shipped_at` | DateTimeField | null/blank | — |
 | `delivered_at` | DateTimeField | null/blank | — |
 
-**Methods**: `save()` calls `generate_order_number()` on first save; `recalculate_totals(tax_rate, save)` recomputes subtotal/tax/total from live OrderItems  
-**Properties**: `full_name`, `billing_address`, `shipping_address`, `can_be_cancelled`, `is_completed`  
+**Methods**: `save()` calls `generate_order_number()` on first save; `recalculate_totals(tax_rate, save)` recomputes subtotal/tax/total from live OrderItems
+**Properties**: `full_name`, `billing_address`, `shipping_address`, `can_be_cancelled`, `is_completed`
 **Meta**: `ordering=["-created_at"]`; indexes on `order_number`, `(status, -created_at)`, `(user, -created_at)`
 
 ---
@@ -299,7 +299,7 @@ Immutable line item snapshot within an order.
 | `total_price` | DecimalField(10,2) | auto-computed = unit_price × quantity | — |
 | `created_at` | DateTimeField | auto_now_add | — |
 
-**Methods**: `save()` snapshots product/variant details on first write; computes `total_price`  
+**Methods**: `save()` snapshots product/variant details on first write; computes `total_price`
 **Meta**: `ordering=["id"]`
 
 ---

@@ -1,8 +1,8 @@
 # Feature Specification: Database Models & Infrastructure (ShopHub Epic 1)
 
-**Feature Branch**: `001-database-models-infrastructure`  
-**Created**: 2026-03-20  
-**Status**: Draft  
+**Feature Branch**: `001-database-models-infrastructure`
+**Created**: 2026-03-20
+**Status**: Draft
 **Epic**: 1 of 11 — foundational prerequisite for all other epics
 
 ## User Scenarios & Testing *(mandatory)*

@@ -236,8 +236,8 @@ class TestOrderItemModel:
             order=order, product=product, quantity=1, unit_price=original_price
         )
 
-        # Change product price
-        product.price = Decimal("99.99")
+        # Change product price to a different value
+        product.price = Decimal("149.99")
         product.save()
 
         # Order item should still have original price

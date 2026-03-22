@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0004_cartitem_unique_no_variant'),
-        ('products', '0003_add_indexes_and_axes'),
+        ("orders", "0004_cartitem_unique_no_variant"),
+        ("products", "0003_add_indexes_and_axes"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='cartitem',
-            index=models.Index(fields=['cart', '-created_at'], name='orders_cart_cart_id_9fa284_idx'),
+            model_name="cartitem",
+            index=models.Index(
+                fields=["cart", "-created_at"], name="orders_cart_cart_id_9fa284_idx"
+            ),
         ),
     ]
