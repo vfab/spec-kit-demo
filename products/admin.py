@@ -53,6 +53,7 @@ class ProductAdmin(admin.ModelAdmin):
         "category",
         "price",
         "stock_quantity",
+        "stock_status",
         "is_active",
         "is_featured",
         "created_at",
@@ -128,9 +129,15 @@ class ProductVariantAdmin(admin.ModelAdmin):
 @admin.register(ProductReview)
 class ProductReviewAdmin(admin.ModelAdmin):
     list_display = ("product", "user", "rating", "is_approved", "created_at")
-    list_filter = ("rating", "is_approved", "created_at")
+    list_filter = ("is_approved", "rating", "created_at")
     search_fields = ("title", "body", "user__username", "product__name")
     readonly_fields = ("created_at", "updated_at")
+    actions = ["bulk_approve"]
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("product", "user")
+
+    @admin.action(description="Approve selected reviews")
+    def bulk_approve(self, request, queryset):
+        updated = queryset.update(is_approved=True)
+        self.message_user(request, f"{updated} review(s) approved.")

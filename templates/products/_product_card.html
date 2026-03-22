@@ -1,0 +1,93 @@
+{% load static %}
+{# Reusable product card partial.
+   Context variable: `product` — a Product instance. #}
+<div class="card product-card h-100">
+  <div class="product-image position-relative">
+    {% if product.is_featured %}
+    <div class="product-badge featured">Featured</div>
+    {% endif %}
+    {% if product.is_on_sale %}
+    <div class="product-badge sale" style="top: 2.5rem;">-{{ product.discount_percentage }}%</div>
+    {% endif %}
+
+    {# Stock status badge #}
+    {% if product.stock_status == "out_of_stock" %}
+    <div class="product-badge" style="background:#dc3545;bottom:0.5rem;top:auto;">Out of Stock</div>
+    {% elif product.stock_status == "low_stock" %}
+    <div class="product-badge" style="background:#fd7e14;bottom:0.5rem;top:auto;">Low Stock</div>
+    {% endif %}
+
+    <a href="{{ product.get_absolute_url }}">
+      {% if product.main_image %}
+      <img
+        src="{{ product.main_image.image.url }}"
+        alt="{{ product.main_image.alt_text|default:product.name }}"
+        class="card-img-top"
+        loading="lazy"
+      />
+      {% else %}
+      <div class="d-flex align-items-center justify-content-center" style="height:200px;background:#f8f9fa;">
+        <i class="fas fa-image text-muted fa-3x"></i>
+      </div>
+      {% endif %}
+    </a>
+  </div>
+
+  <div class="card-body product-info d-flex flex-column">
+    <a href="{{ product.get_absolute_url }}" class="product-title">
+      {{ product.name }}
+    </a>
+
+    <p class="text-muted small flex-grow-1">
+      {{ product.description|truncatewords:12 }}
+    </p>
+
+    {# Aggregate rating — shown when reviews exist #}
+    {% if product.reviews.exists %}
+    <div class="mb-1">
+      <small class="text-warning"><i class="fas fa-star"></i></small>
+      <small class="text-muted">({{ product.reviews.count }} reviews)</small>
+    </div>
+    {% endif %}
+
+    <div class="mt-auto">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        {% if product.is_on_sale %}
+        <span>
+          <span class="product-price text-danger">${{ product.price }}</span>
+          <small class="text-muted text-decoration-line-through ms-1">${{ product.compare_price }}</small>
+        </span>
+        {% else %}
+        <span class="product-price">${{ product.price }}</span>
+        {% endif %}
+        <small class="text-muted">{{ product.category.name }}</small>
+      </div>
+
+      <div class="d-grid gap-2 mt-2">
+        <a href="{{ product.get_absolute_url }}" class="btn btn-primary btn-sm">
+          <i class="fas fa-eye me-1"></i> View Details
+        </a>
+        {% if product.stock_status != "out_of_stock" %}
+        <button
+          class="btn btn-outline-success btn-sm add-to-cart-btn"
+          data-product-id="{{ product.id }}"
+        >
+          <i class="fas fa-cart-plus me-1"></i> Add to Cart
+        </button>
+        {% else %}
+        <button class="btn btn-outline-secondary btn-sm" disabled>
+          <i class="fas fa-times me-1"></i> Out of Stock
+        </button>
+        {% endif %}
+        <button
+          class="btn btn-outline-info btn-sm compare-btn"
+          data-product-id="{{ product.id }}"
+          data-product-name="{{ product.name }}"
+          type="button"
+        >
+          <i class="fas fa-columns me-1"></i> Compare
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

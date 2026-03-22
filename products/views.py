@@ -1,10 +1,14 @@
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
-from django.db.models import Max, Min, Q
-from django.shortcuts import get_object_or_404
-from django.views.generic import DetailView, ListView, TemplateView
+from django.db.models import Avg, Max, Min, Q
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.generic import DetailView, FormView, ListView, TemplateView, View
 
-from .models import Category, Product
+from .models import Category, Product, ProductReview
 
 
 class HomeView(TemplateView):
@@ -125,7 +129,25 @@ class ProductListView(ListView):
         )
         context["price_range"] = price_range
 
+        # Recently viewed shelf (T029) — read-only, no session mutation here
+        rv_pks = self.request.session.get("recently_viewed", [])
+        if rv_pks:
+            rv_map = {
+                p.pk: p
+                for p in Product.objects.filter(pk__in=rv_pks, is_active=True)
+                .only("name", "slug", "price")
+                .prefetch_related("images")
+            }
+            context["recently_viewed"] = [rv_map[pk] for pk in rv_pks if pk in rv_map]
+        else:
+            context["recently_viewed"] = []
+
         return context
+
+    def render_to_response(self, context, **response_kwargs):
+        if self.request.GET.get("format") == "partial":
+            self.template_name = "products/_product_grid.html"
+        return super().render_to_response(context, **response_kwargs)
 
 
 class ProductDetailView(DetailView):
@@ -187,6 +209,55 @@ class ProductDetailView(DetailView):
         context["images"] = product.images.all()
         context["variants"] = product.variants.filter(stock_quantity__gt=0)
 
+        # Approved reviews with aggregate rating (T008)
+        reviews = ProductReview.objects.filter(
+            product=product, is_approved=True
+        ).select_related("user")
+        context["reviews"] = reviews
+        context["review_count"] = reviews.count()
+        avg = reviews.aggregate(avg_rating=Avg("rating"))["avg_rating"]
+        context["avg_rating"] = round(avg, 1) if avg else None
+
+        # Review form — lazy import to avoid circular dep; None if not yet available
+        try:
+            from .forms import ReviewSubmissionForm  # noqa: PLC0415
+
+            context["review_form"] = ReviewSubmissionForm()
+        except ImportError:
+            context["review_form"] = None
+
+        # Current user's existing review (None for anonymous users)
+        if self.request.user.is_authenticated:
+            context["user_existing_review"] = ProductReview.objects.filter(
+                product=product, user=self.request.user
+            ).first()
+        else:
+            context["user_existing_review"] = None
+
+        # Recently viewed — session tracking (T027)
+        recently_viewed_pks = self.request.session.get("recently_viewed", [])
+        pk = product.pk
+        # Deduplicate and prepend current product
+        recently_viewed_pks = [p for p in recently_viewed_pks if p != pk]
+        recently_viewed_pks.insert(0, pk)
+        recently_viewed_pks = recently_viewed_pks[:8]
+        self.request.session["recently_viewed"] = recently_viewed_pks
+        self.request.session.modified = True
+
+        # Batch-fetch recently viewed products (excluding current)
+        rv_pks = [p for p in recently_viewed_pks if p != pk]
+        if rv_pks:
+            rv_map = {
+                p.pk: p
+                for p in Product.objects.filter(pk__in=rv_pks, is_active=True)
+                .only("name", "slug", "price")
+                .prefetch_related("images")
+            }
+            # Preserve session order
+            context["recently_viewed"] = [rv_map[p] for p in rv_pks if p in rv_map]
+        else:
+            context["recently_viewed"] = []
+
         return context
 
 
@@ -197,10 +268,18 @@ class CategoryView(ListView):
     template_name = "products/category.html"
     context_object_name = "products"
     paginate_by = 12
+    ALLOWED_SORT_FIELDS = {
+        "-created_at",
+        "created_at",
+        "price",
+        "-price",
+        "name",
+        "-name",
+    }
 
     def get_queryset(self):
         self.category = get_object_or_404(Category, slug=self.kwargs["slug"])
-        return (
+        queryset = (
             Product.objects.filter(
                 Q(category=self.category) | Q(category__parent=self.category),
                 is_active=True,
@@ -208,10 +287,15 @@ class CategoryView(ListView):
             .select_related("category")
             .prefetch_related("images", "variants")
         )
+        sort_by = self.request.GET.get("sort", "-created_at")
+        if sort_by not in self.ALLOWED_SORT_FIELDS:
+            sort_by = "-created_at"
+        return queryset.order_by(sort_by)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["category"] = self.category
+        context["subcategories"] = self.category.children.filter(is_active=True)
         return context
 
 
@@ -241,4 +325,185 @@ class ProductSearchView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["query"] = self.request.GET.get("q", "")
+        return context
+
+
+class AutocompleteView(View):
+    """JSON autocomplete endpoint for the search input (T012)."""
+
+    def get(self, request):
+        q = request.GET.get("q", "").strip()
+        if len(q) < 2:
+            return JsonResponse({"results": []})
+        products = Product.objects.filter(name__icontains=q, is_active=True).only(
+            "name", "slug"
+        )[:10]
+        results = [{"name": p.name, "url": p.get_absolute_url()} for p in products]
+        return JsonResponse({"results": results})
+
+
+class ReviewSubmitView(LoginRequiredMixin, FormView):
+    """Handle review submission for a product (T021)."""
+
+    def get_form_class(self):
+        from .forms import ReviewSubmissionForm  # noqa: PLC0415
+
+        return ReviewSubmissionForm
+
+    def get_product(self):
+        return get_object_or_404(Product, slug=self.kwargs["slug"], is_active=True)
+
+    def form_valid(self, form):
+        product = self.get_product()
+        if ProductReview.objects.filter(
+            product=product, user=self.request.user
+        ).exists():
+            return redirect(
+                reverse("products:product_detail", kwargs={"slug": product.slug})
+                + "?review=exists"
+            )
+        review = form.save(commit=False)
+        review.product = product
+        review.user = self.request.user
+        review.is_approved = False
+        review.save()
+        return redirect(
+            reverse("products:product_detail", kwargs={"slug": product.slug})
+            + "?review=submitted"
+        )
+
+    def form_invalid(self, form):
+        # Re-render the product detail page with form errors
+        product = self.get_product()
+        from django.shortcuts import render  # noqa: PLC0415
+
+        reviews = ProductReview.objects.filter(
+            product=product, is_approved=True
+        ).select_related("user")
+        return render(
+            self.request,
+            "products/product_detail.html",
+            {
+                "product": product,
+                "review_form": form,
+                "reviews": reviews,
+                "review_count": reviews.count(),
+                "images": product.images.all(),
+                "variants": product.variants.filter(stock_quantity__gt=0),
+            },
+        )
+
+
+class ComparisonAddView(View):
+    """Add a product to the session-based comparison list (T031)."""
+
+    def post(self, request):
+        referrer = request.POST.get("next") or request.META.get("HTTP_REFERER", "/")
+        # Open-redirect guard
+        if not url_has_allowed_host_and_scheme(
+            referrer,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            referrer = "/"
+
+        try:
+            product_id = int(request.POST.get("product_id", ""))
+        except (ValueError, TypeError):
+            return redirect(referrer + "?compare_error=invalid")
+
+        product = get_object_or_404(Product, pk=product_id, is_active=True)
+
+        comparison = request.session.get("comparison", {"pks": [], "category_id": None})
+        pks = comparison.get("pks", [])
+        category_id = comparison.get("category_id")
+
+        # Already in list — no-op
+        if product_id in pks:
+            return redirect(referrer)
+
+        # Enforce same-category constraint
+        if category_id is not None and product.category_id != category_id:
+            return redirect(referrer + "?compare_error=category")
+
+        # Enforce 3-product limit
+        if len(pks) >= 3:
+            return redirect(referrer + "?compare_error=limit")
+
+        pks.append(product_id)
+        request.session["comparison"] = {
+            "pks": pks,
+            "category_id": product.category_id,
+        }
+        request.session.modified = True
+        return redirect(referrer)
+
+
+class ComparisonRemoveView(View):
+    """Remove a product from the session comparison list (T031)."""
+
+    def post(self, request):
+        referrer = request.POST.get("next") or request.META.get("HTTP_REFERER", "/")
+        if not url_has_allowed_host_and_scheme(
+            referrer,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            referrer = "/"
+
+        try:
+            product_id = int(request.POST.get("product_id", ""))
+        except (ValueError, TypeError):
+            return redirect(referrer)
+
+        comparison = request.session.get("comparison", {"pks": [], "category_id": None})
+        pks = [p for p in comparison.get("pks", []) if p != product_id]
+        request.session["comparison"] = {
+            "pks": pks,
+            "category_id": comparison.get("category_id") if pks else None,
+        }
+        request.session.modified = True
+        return redirect(referrer)
+
+
+class ComparisonView(ListView):
+    """Display the side-by-side product comparison page (T031)."""
+
+    template_name = "products/compare.html"
+    context_object_name = "compared_products"
+
+    def get_queryset(self):
+        comparison = self.request.session.get("comparison", {"pks": []})
+        pks = comparison.get("pks", [])
+        if not pks:
+            return Product.objects.none()
+        products = Product.objects.filter(pk__in=pks, is_active=True).prefetch_related(
+            "images", "variants"
+        )
+        # Preserve session order
+        pk_map = {p.pk: p for p in products}
+        return [pk_map[pk] for pk in pks if pk in pk_map]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        compared = context["compared_products"]
+
+        # Build attribute matrix as a list of (attr_name, [values_per_product]) rows
+        # so templates can iterate without needing a custom filter.
+        attr_order: list[str] = []
+        attr_index: dict[str, int] = {}
+        rows: list[list[list[str]]] = []  # rows[attr_idx][product_idx] = [values]
+
+        for product in compared:
+            for variant in product.variants.all():
+                if variant.name not in attr_index:
+                    attr_index[variant.name] = len(attr_order)
+                    attr_order.append(variant.name)
+                    rows.append([[] for _ in compared])
+                row_idx = attr_index[variant.name]
+                prod_idx = list(compared).index(product)
+                rows[row_idx][prod_idx].append(variant.value)
+
+        # Zip into (name, [per-product values]) for easy template iteration
+        context["attribute_rows"] = list(zip(attr_order, rows))
         return context

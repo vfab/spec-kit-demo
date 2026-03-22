@@ -1,6 +1,6 @@
 # ShopHub — Development Guidelines
 
-Auto-generated from project constitution and source codebase. Last updated: 2026-03-20
+Auto-generated from project constitution and source codebase. Last updated: 2026-03-22
 
 ## Project Overview
 
@@ -178,3 +178,6 @@ Key variables (see `.env.example` for full list):
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
+
+## Recent Changes
+- 002-product-catalog-system: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]

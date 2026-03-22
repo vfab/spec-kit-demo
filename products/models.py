@@ -184,6 +184,15 @@ class Product(models.Model):
             return images[0] if images else None
         return self.images.filter(is_primary=True).first()
 
+    @property
+    def stock_status(self):
+        threshold = getattr(settings, "LOW_STOCK_THRESHOLD", 5)
+        if self.stock_quantity == 0:
+            return "out_of_stock"
+        if self.stock_quantity <= threshold:
+            return "low_stock"
+        return "in_stock"
+
 
 class ProductImage(models.Model):
     """
@@ -312,6 +321,15 @@ class ProductVariant(models.Model):
     @property
     def final_price(self):
         return self.product.price + self.price_adjustment
+
+    @property
+    def stock_status(self):
+        threshold = getattr(settings, "LOW_STOCK_THRESHOLD", 5)
+        if self.stock_quantity == 0:
+            return "out_of_stock"
+        if self.stock_quantity <= threshold:
+            return "low_stock"
+        return "in_stock"
 
 
 class ProductReview(models.Model):

@@ -18,8 +18,13 @@ from django.contrib.auth.models import User
 
 from accounts.models import UserProfile
 from orders.models import Cart, CartItem, Order, OrderItem
-from products.models import Category, Product, ProductImage, ProductReview, ProductVariant
-
+from products.models import (
+    Category,
+    Product,
+    ProductImage,
+    ProductReview,
+    ProductVariant,
+)
 
 # ---------------------------------------------------------------------------
 # Accounts factories

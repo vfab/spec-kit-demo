@@ -242,6 +242,10 @@ TAX_RATE = config("TAX_RATE", default=0.08, cast=float)
 # Override per environment via .env: MAX_IMAGE_UPLOAD_MB=10
 MAX_IMAGE_UPLOAD_MB = config("MAX_IMAGE_UPLOAD_MB", default=5, cast=int)
 
+# Stock threshold for "low stock" badge on product listings.
+# Override per environment via .env: LOW_STOCK_THRESHOLD=10
+LOW_STOCK_THRESHOLD = config("LOW_STOCK_THRESHOLD", default=5, cast=int)
+
 # -----------------------------------------------------------------
 # Feature flags (F1)
 # Toggle incomplete or environment-specific features without a code deploy.

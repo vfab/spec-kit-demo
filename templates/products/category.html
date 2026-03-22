@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ category.name }} - ShopHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'products:home' %}">Home</a></li>
+      {% if category.parent %}
+      <li class="breadcrumb-item">
+        <a href="{% url 'products:category' category.parent.slug %}">{{ category.parent.name }}</a>
+      </li>
+      {% endif %}
+      <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+    </ol>
+  </nav>
+
+  <!-- Category Header -->
+  <div class="row align-items-center mb-4">
+    <div class="col">
+      <h1>{{ category.name }}</h1>
+      {% if category.description %}
+      <p class="text-muted">{{ category.description }}</p>
+      {% endif %}
+    </div>
+    <div class="col-auto">
+      <!-- Sort Dropdown -->
+      <form method="get" class="d-inline">
+        <select class="form-select" name="sort" onchange="this.form.submit()">
+          <option value="-created_at" {% if request.GET.sort == "-created_at" or not request.GET.sort %}selected{% endif %}>Newest First</option>
+          <option value="name" {% if request.GET.sort == "name" %}selected{% endif %}>Name A-Z</option>
+          <option value="-name" {% if request.GET.sort == "-name" %}selected{% endif %}>Name Z-A</option>
+          <option value="price" {% if request.GET.sort == "price" %}selected{% endif %}>Price Low to High</option>
+          <option value="-price" {% if request.GET.sort == "-price" %}selected{% endif %}>Price High to Low</option>
+        </select>
+      </form>
+    </div>
+  </div>
+
+  <!-- Subcategory Links -->
+  {% if subcategories %}
+  <div class="mb-4">
+    <h6 class="text-muted text-uppercase">Subcategories</h6>
+    <div class="d-flex flex-wrap gap-2">
+      {% for sub in subcategories %}
+      <a href="{% url 'products:category' sub.slug %}" class="btn btn-outline-secondary btn-sm">
+        {{ sub.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Product Grid -->
+  {% if products %}
+  <p class="text-muted mb-3">
+    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ paginator.count }} product{{ paginator.count|pluralize }}
+  </p>
+  <div class="row g-4" id="product-grid">
+    {% for product in products %}
+    <div class="col-lg-3 col-md-4 col-sm-6">
+      {% include "products/_product_card.html" with product=product %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if products.has_other_pages %}
+  <nav aria-label="Products pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+      {% if products.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ products.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+          <i class="fas fa-angle-left"></i>
+        </a>
+      </li>
+      {% endif %}
+      {% for num in products.paginator.page_range %}
+        {% if products.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > products.number|add:"-3" and num < products.number|add:"3" %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ num }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ num }}</a>
+        </li>
+        {% endif %}
+      {% endfor %}
+      {% if products.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ products.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+          <i class="fas fa-angle-right"></i>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <!-- Empty State -->
+  <div class="text-center py-5">
+    <i class="fas fa-box-open text-muted mb-3" style="font-size:4rem;"></i>
+    <h3>No Products in This Category</h3>
+    <p class="text-muted">Check back soon or browse other categories.</p>
+    <a href="{% url 'products:product_list' %}" class="btn btn-primary mt-2">
+      <i class="fas fa-arrow-left me-1"></i> Browse All Products
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
