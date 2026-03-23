@@ -186,9 +186,18 @@ class Product(models.Model):
 
     @property
     def stock_status(self):
-        threshold = getattr(settings, "LOW_STOCK_THRESHOLD", 5)
-        if self.stock_quantity == 0:
+        # First, honour the unified availability logic so backorderable and
+        # non-tracked products are never incorrectly labelled out_of_stock.
+        if not self.is_in_stock:
             return "out_of_stock"
+
+        # If inventory is not tracked, or backorders are allowed, there is no
+        # meaningful stock ceiling — skip the low-stock threshold entirely.
+        if not self.track_inventory or self.allow_backorders:
+            return "in_stock"
+
+        # Only apply the low-stock threshold when stock is actually limiting.
+        threshold = getattr(settings, "LOW_STOCK_THRESHOLD", 5)
         if self.stock_quantity <= threshold:
             return "low_stock"
         return "in_stock"

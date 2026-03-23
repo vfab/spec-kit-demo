@@ -42,11 +42,12 @@
       {{ product.description|truncatewords:12 }}
     </p>
 
-    {# Aggregate rating — shown when reviews exist #}
-    {% if product.reviews.exists %}
+    {# Aggregate rating — shown when approved reviews exist.
+       approved_review_count is annotated on the queryset by list/category views;  #}
+    {% if product.approved_review_count %}
     <div class="mb-1">
       <small class="text-warning"><i class="fas fa-star"></i></small>
-      <small class="text-muted">({{ product.reviews.count }} reviews)</small>
+      <small class="text-muted">({{ product.approved_review_count }} reviews)</small>
     </div>
     {% endif %}
 

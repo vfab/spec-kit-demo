@@ -1,7 +1,9 @@
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
-from django.db.models import Avg, Max, Min, Q
+from django.db.models import Avg, Case, Count, IntegerField, Max, Min, Q, When
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -63,6 +65,11 @@ class ProductListView(ListView):
             Product.objects.filter(is_active=True)
             .select_related("category")
             .prefetch_related("images", "variants")
+            .annotate(
+                approved_review_count=Count(
+                    "reviews", filter=Q(reviews__is_approved=True)
+                )
+            )
         )
 
         # Search filter
@@ -207,7 +214,7 @@ class ProductDetailView(DetailView):
 
         # Product images and variants — prefetched to avoid per-image DB hits
         context["images"] = product.images.all()
-        context["variants"] = product.variants.filter(stock_quantity__gt=0)
+        context["variants"] = product.variants.filter(is_active=True)
 
         # Approved reviews with aggregate rating (T008)
         reviews = ProductReview.objects.filter(
@@ -286,6 +293,11 @@ class CategoryView(ListView):
             )
             .select_related("category")
             .prefetch_related("images", "variants")
+            .annotate(
+                approved_review_count=Count(
+                    "reviews", filter=Q(reviews__is_approved=True)
+                )
+            )
         )
         sort_by = self.request.GET.get("sort", "-created_at")
         if sort_by not in self.ALLOWED_SORT_FIELDS:
@@ -333,12 +345,11 @@ class AutocompleteView(View):
 
     def get(self, request):
         q = request.GET.get("q", "").strip()
-        if len(q) < 2:
+        if len(q) < 2 or len(q) > 100:
             return JsonResponse({"results": []})
-        products = (
-            Product.objects.filter(name__icontains=q, is_active=True)
-            .only("name", "slug")[:10]
-        )
+        products = Product.objects.filter(name__icontains=q, is_active=True).only(
+            "name", "slug"
+        )[:10]
         results = [{"name": p.name, "url": p.get_absolute_url()} for p in products]
         return JsonResponse({"results": results})
 
@@ -380,25 +391,34 @@ class ReviewSubmitView(LoginRequiredMixin, FormView):
         )
 
     def form_invalid(self, form):
-        # Re-render the product detail page with form errors
+        # Re-render the product detail page with the full ProductDetailView
+        # context so that no template sections are missing.
         product = self.get_product()
         from django.shortcuts import render  # noqa: PLC0415
 
-        reviews = ProductReview.objects.filter(
-            product=product, is_approved=True
-        ).select_related("user")
-        return render(
-            self.request,
-            "products/product_detail.html",
-            {
-                "product": product,
-                "review_form": form,
-                "reviews": reviews,
-                "review_count": reviews.count(),
-                "images": product.images.all(),
-                "variants": product.variants.filter(stock_quantity__gt=0),
-            },
-        )
+        detail_view = ProductDetailView()
+        detail_view.request = self.request
+        detail_view.kwargs = self.kwargs
+        detail_view.object = product
+        context = detail_view.get_context_data(object=product)
+        context["review_form"] = form
+        return render(self.request, "products/product_detail.html", context)
+
+
+def _redirect_with_error(referrer, error_code):
+    """Return a redirect to referrer with compare_error safely appended.
+
+    Uses urllib.parse to merge the parameter so existing query strings
+    like ?category=1 become ?category=1&compare_error=limit rather than
+    ?category=1?compare_error=limit.
+    """
+    parsed = urlparse(referrer)
+    # Build a fresh query dict preserving existing params, then add/replace error.
+    params = parse_qs(parsed.query, keep_blank_values=True)
+    params["compare_error"] = [error_code]
+    new_query = urlencode({k: v[0] for k, v in params.items()})
+    new_url = urlunparse(parsed._replace(query=new_query))
+    return redirect(new_url)
 
 
 class ComparisonAddView(View):
@@ -417,13 +437,11 @@ class ComparisonAddView(View):
         try:
             product_id = int(request.POST.get("product_id", ""))
         except (ValueError, TypeError):
-            return redirect(referrer + "?compare_error=invalid")
+            return _redirect_with_error(referrer, "invalid")
 
         product = get_object_or_404(Product, pk=product_id, is_active=True)
 
-        comparison = request.session.get(
-            "comparison", {"pks": [], "category_id": None}
-        )
+        comparison = request.session.get("comparison", {"pks": [], "category_id": None})
         pks = comparison.get("pks", [])
         category_id = comparison.get("category_id")
 
@@ -433,11 +451,11 @@ class ComparisonAddView(View):
 
         # Enforce same-category constraint
         if category_id is not None and product.category_id != category_id:
-            return redirect(referrer + "?compare_error=category")
+            return _redirect_with_error(referrer, "category")
 
         # Enforce 3-product limit
         if len(pks) >= 3:
-            return redirect(referrer + "?compare_error=limit")
+            return _redirect_with_error(referrer, "limit")
 
         pks.append(product_id)
         request.session["comparison"] = {
@@ -494,16 +512,27 @@ class ComparisonView(ListView):
         pks = comparison.get("pks", [])
         if not pks:
             return Product.objects.none()
-        products = Product.objects.filter(pk__in=pks, is_active=True).prefetch_related(
-            "images", "variants"
+        # Use Case/When to preserve the session-defined order while returning
+        # a real QuerySet (so ListView internals work correctly).
+        ordering = Case(
+            *[When(pk=pk, then=pos) for pos, pk in enumerate(pks)],
+            output_field=IntegerField(),
         )
-        # Preserve session order
-        pk_map = {p.pk: p for p in products}
-        return [pk_map[pk] for pk in pks if pk in pk_map]
+        return (
+            Product.objects.filter(pk__in=pks, is_active=True)
+            .prefetch_related("images", "variants")
+            .annotate(
+                _order=ordering,
+                approved_review_count=Count(
+                    "reviews", filter=Q(reviews__is_approved=True)
+                ),
+            )
+            .order_by("_order")
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        compared = context["compared_products"]
+        compared = list(context["compared_products"])
 
         # Build attribute matrix as a list of (attr_name, [values_per_product]) rows
         # so templates can iterate without needing a custom filter.
@@ -511,14 +540,13 @@ class ComparisonView(ListView):
         attr_index: dict[str, int] = {}
         rows: list[list[list[str]]] = []  # rows[attr_idx][product_idx] = [values]
 
-        for product in compared:
+        for prod_idx, product in enumerate(compared):
             for variant in product.variants.all():
                 if variant.name not in attr_index:
                     attr_index[variant.name] = len(attr_order)
                     attr_order.append(variant.name)
                     rows.append([[] for _ in compared])
                 row_idx = attr_index[variant.name]
-                prod_idx = list(compared).index(product)
                 rows[row_idx][prod_idx].append(variant.value)
 
         # Zip into (name, [per-product values]) for easy template iteration

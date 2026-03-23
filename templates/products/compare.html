@@ -67,11 +67,11 @@
           <td class="text-start fw-semibold">Rating</td>
           {% for product in compared_products %}
           <td>
-            {% if product.reviews.exists %}
+            {% if product.approved_review_count %}
             <span class="text-warning">
               <i class="fas fa-star"></i>
             </span>
-            <small class="text-muted">({{ product.reviews.count }})</small>
+            <small class="text-muted">({{ product.approved_review_count }})</small>
             {% else %}
             <small class="text-muted">No reviews</small>
             {% endif %}

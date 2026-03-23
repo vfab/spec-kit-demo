@@ -250,13 +250,13 @@ ShopHub{% endblock %} {% block content %}
       <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
         <span class="text-muted small">Active filters:</span>
         {% if request.GET.category %}
-        <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price }}&{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price }}{% endif %}"
+        <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price }}&{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price }}{% endif %}"
            class="badge bg-primary text-decoration-none">
           Category: {{ request.GET.category }} <span class="ms-1">×</span>
         </a>
         {% endif %}
         {% if request.GET.min_price or request.GET.max_price %}
-        <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}{% endif %}"
+        <a href="?{% if request.GET.sort %}sort={{ request.GET.sort }}&{% endif %}{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}{% endif %}"
            class="badge bg-secondary text-decoration-none">
           Price: ${{ request.GET.min_price|default:"0" }}–${{ request.GET.max_price|default:"∞" }} <span class="ms-1">×</span>
         </a>

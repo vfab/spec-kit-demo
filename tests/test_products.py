@@ -1322,7 +1322,7 @@ class TestProductComparison:
 
     @pytest.mark.django_db
     def test_invalid_product_id_redirects(self, client, db):
-        """ComparisonAddView gracefully handles an invalid product_id."""
+        """ComparisonAddView handles an invalid product_id (redirects with error)."""
         response = client.post(
             reverse("products:compare_add"),
             {"product_id": "not-a-number", "next": "/"},

@@ -141,7 +141,8 @@ POST /products/compare/add/
 **Success Response**: `302 Redirect` → HTTP_REFERER (safe) or `products:product_list`
 **Category Mismatch**: `302 Redirect` → referrer with `?compare_error=category` message
 **Limit Exceeded (3 products)**: `302 Redirect` → referrer with `?compare_error=limit` message
-**Invalid product_id**: `400 Bad Request`
+**Invalid product_id**: `302 Redirect` → referrer with `?compare_error=invalid` message
+**Product not found / inactive**: `404 Not Found`
 
 ---
 

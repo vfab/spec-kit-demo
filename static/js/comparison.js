@@ -72,24 +72,24 @@
       method: "POST",
       headers: { "X-CSRFToken": getCSRFToken() },
       body: formData,
-      redirect: "manual",
+      // Use default redirect:"follow" so response.url is the final settled URL
+      // and compare_error parameters are reliably readable.
     })
       .then(function (response) {
-        // Django redirects to the 'next' URL, possibly with an error param
-        // Since we used redirect:'manual', the status is 0 (opaque) for cross-origin
-        // or 3xx for same-origin. Check the final URL via response.url.
-        const location = response.headers.get("location") || response.url;
-        if (location && location.includes("compare_error=category")) {
+        // Django redirects to the 'next' URL, possibly with an error param.
+        // With default redirect handling, response.url is the final URL.
+        const finalUrl = response.url;
+        if (finalUrl && finalUrl.includes("compare_error=category")) {
           showToast(
             '<i class="fas fa-exclamation-circle me-1"></i> Products must be from the same category to compare.',
             "warning"
           );
-        } else if (location && location.includes("compare_error=limit")) {
+        } else if (finalUrl && finalUrl.includes("compare_error=limit")) {
           showToast(
             '<i class="fas fa-exclamation-circle me-1"></i> You can compare up to 3 products at a time.',
             "warning"
           );
-        } else if (location && location.includes("compare_error=invalid")) {
+        } else if (finalUrl && finalUrl.includes("compare_error=invalid")) {
           showToast('<i class="fas fa-times me-1"></i> Invalid product.', "danger");
         } else {
           showToast(
