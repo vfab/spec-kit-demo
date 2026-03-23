@@ -48,6 +48,24 @@
 
           // Re-attach pagination link interceptors after swap
           attachPaginationLinks();
+
+          // Notify other scripts that the products grid has been updated so they
+          // can re-bind any event listeners attached on initial load.
+          var gridUpdateEvent;
+          try {
+            gridUpdateEvent = new CustomEvent("productsGridUpdated", {
+              detail: { container: productGrid },
+            });
+          } catch (e) {
+            gridUpdateEvent = document.createEvent("CustomEvent");
+            gridUpdateEvent.initCustomEvent(
+              "productsGridUpdated",
+              true,
+              true,
+              { container: productGrid }
+            );
+          }
+          document.dispatchEvent(gridUpdateEvent);
         })
         .catch(function () {
           // Fallback: full page navigation on error

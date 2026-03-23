@@ -7,7 +7,13 @@
 (function () {
   "use strict";
 
-  const ADD_URL = "/products/compare/add/";
+  const ADD_URL = (function () {
+    // Prefer a URL rendered by the template via a data-* attribute on the
+    // compare button, e.g. data-compare-add-url="{% url 'products:compare_add' %}"
+    var el = document.querySelector("[data-compare-add-url]");
+    var url = el && el.getAttribute("data-compare-add-url");
+    return url || "/products/compare/add/";
+  })();
 
   /**
    * Escape user-supplied text before injecting into innerHTML.
@@ -27,13 +33,25 @@
     return cookie ? cookie.split("=")[1] : "";
   }
 
-  function showToast(message, type) {
+  // showToast renders plain text safely via DOM APIs.
+  // iconClass is an optional Font Awesome class string (e.g. "fas fa-check").
+  function showToast(message, type, iconClass) {
     type = type || "info";
     const container = document.getElementById("toast-container") || createToastContainer();
     const toast = document.createElement("div");
-    toast.className = `alert alert-${type} alert-dismissible fade show py-2 px-3`;
+    toast.className = "alert alert-" + type + " alert-dismissible fade show py-2 px-3";
     toast.style.cssText = "min-width:250px;";
-    toast.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    if (iconClass) {
+      const icon = document.createElement("i");
+      icon.className = iconClass + " me-1";
+      toast.appendChild(icon);
+    }
+    toast.appendChild(document.createTextNode(message));
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "btn-close";
+    closeBtn.setAttribute("data-bs-dismiss", "alert");
+    toast.appendChild(closeBtn);
     container.appendChild(toast);
     setTimeout(function () { toast.remove(); }, 4000);
   }
@@ -81,20 +99,23 @@
         const finalUrl = response.url;
         if (finalUrl && finalUrl.includes("compare_error=category")) {
           showToast(
-            '<i class="fas fa-exclamation-circle me-1"></i> Products must be from the same category to compare.',
-            "warning"
+            "Products must be from the same category to compare.",
+            "warning",
+            "fas fa-exclamation-circle"
           );
         } else if (finalUrl && finalUrl.includes("compare_error=limit")) {
           showToast(
-            '<i class="fas fa-exclamation-circle me-1"></i> You can compare up to 3 products at a time.',
-            "warning"
+            "You can compare up to 3 products at a time.",
+            "warning",
+            "fas fa-exclamation-circle"
           );
         } else if (finalUrl && finalUrl.includes("compare_error=invalid")) {
-          showToast('<i class="fas fa-times me-1"></i> Invalid product.', "danger");
+          showToast("Invalid product.", "danger", "fas fa-times");
         } else {
           showToast(
-            `<i class="fas fa-check me-1"></i> &ldquo;${escapeHtml(productName)}&rdquo; added to comparison.`,
-            "success"
+            "\u201c" + productName + "\u201d added to comparison.",
+            "success",
+            "fas fa-check"
           );
           // Update the compare widget by reloading the page silently
           // (full solution would use a dedicated API endpoint)
@@ -102,7 +123,7 @@
         }
       })
       .catch(function () {
-        showToast('<i class="fas fa-times me-1"></i> Could not add product. Please try again.', "danger");
+        showToast("Could not add product. Please try again.", "danger", "fas fa-times");
       });
   });
 })();

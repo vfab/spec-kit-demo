@@ -14,7 +14,7 @@
   <ul class="pagination justify-content-center">
     {% if products.has_previous %}
     <li class="page-item">
-      <a class="page-link" href="?page={{ products.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}">
+      <a class="page-link" href="?page={{ products.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort|urlencode }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category|urlencode }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price|urlencode }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price|urlencode }}{% endif %}">
         <i class="fas fa-angle-left"></i>
       </a>
     </li>
@@ -24,13 +24,13 @@
       <li class="page-item active"><span class="page-link">{{ num }}</span></li>
       {% elif num > products.number|add:"-3" and num < products.number|add:"3" %}
       <li class="page-item">
-        <a class="page-link" href="?page={{ num }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}">{{ num }}</a>
+        <a class="page-link" href="?page={{ num }}{% if request.GET.sort %}&sort={{ request.GET.sort|urlencode }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category|urlencode }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price|urlencode }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price|urlencode }}{% endif %}">{{ num }}</a>
       </li>
       {% endif %}
     {% endfor %}
     {% if products.has_next %}
     <li class="page-item">
-      <a class="page-link" href="?page={{ products.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}">
+      <a class="page-link" href="?page={{ products.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort|urlencode }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category|urlencode }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price|urlencode }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price|urlencode }}{% endif %}">
         <i class="fas fa-angle-right"></i>
       </a>
     </li>

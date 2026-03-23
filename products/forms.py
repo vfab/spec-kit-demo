@@ -24,7 +24,7 @@ class ReviewSubmissionForm(forms.ModelForm):
         ),
     )
     body = forms.CharField(
-        required=False,
+        required=True,
         widget=forms.Textarea(
             attrs={
                 "class": "form-control",

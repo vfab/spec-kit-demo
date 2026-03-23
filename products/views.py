@@ -226,8 +226,12 @@ class ProductDetailView(DetailView):
             product=product, is_approved=True
         ).select_related("user")
         context["reviews"] = reviews
-        context["review_count"] = reviews.count()
-        avg = reviews.aggregate(avg_rating=Avg("rating"))["avg_rating"]
+        aggregates = reviews.aggregate(
+            review_count=Count("id"),
+            avg_rating=Avg("rating"),
+        )
+        context["review_count"] = aggregates["review_count"] or 0
+        avg = aggregates["avg_rating"]
         context["avg_rating"] = round(avg, 1) if avg else None
         context["rounded_avg_rating"] = round(avg) if avg else 0
 
@@ -442,7 +446,7 @@ def _redirect_with_error(referrer, error_code):
     # Build a fresh query dict preserving existing params, then add/replace error.
     params = parse_qs(parsed.query, keep_blank_values=True)
     params["compare_error"] = [error_code]
-    new_query = urlencode({k: v[0] for k, v in params.items()})
+    new_query = urlencode(params, doseq=True)
     new_url = urlunparse(parsed._replace(query=new_query))
     return redirect(new_url)
 

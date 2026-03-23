@@ -16,10 +16,11 @@
         <form method="post" action="{% url 'products:compare_remove' %}" class="d-inline">
           {% csrf_token %}
           <input type="hidden" name="product_id" value="{{ pk }}">
-          <input type="hidden" name="next" value="{{ request.path }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
           <button type="submit" class="btn btn-link text-white p-0 border-0"
                   style="font-size:0.75rem;text-decoration:none;"
-                  title="Remove">
+                  title="Remove"
+                  aria-label="Remove #{{ pk }} from comparison">
             #{{ pk }} ×
           </button>
         </form>

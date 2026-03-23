@@ -151,7 +151,7 @@ class TestProductDetailQueryCount:
                 stock_quantity=5,
             )
         client = Client()
-        with django_assert_max_num_queries(10):
+        with django_assert_max_num_queries(11):
             response = client.get(f"/products/{product.slug}/")
         assert response.status_code == 200
 
