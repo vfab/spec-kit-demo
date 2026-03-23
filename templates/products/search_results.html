@@ -56,7 +56,7 @@
     <ul class="pagination justify-content-center">
       {% if products.has_previous %}
       <li class="page-item">
-        <a class="page-link" href="?q={{ query }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}&page={{ products.previous_page_number }}">
+        <a class="page-link" href="?q={{ query|urlencode }}{% if request.GET.sort %}&sort={{ request.GET.sort|urlencode }}{% endif %}&page={{ products.previous_page_number }}">
           <i class="fas fa-angle-left"></i>
         </a>
       </li>
@@ -66,13 +66,13 @@
         <li class="page-item active"><span class="page-link">{{ num }}</span></li>
         {% elif num > products.number|add:"-3" and num < products.number|add:"3" %}
         <li class="page-item">
-          <a class="page-link" href="?q={{ query }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}&page={{ num }}">{{ num }}</a>
+          <a class="page-link" href="?q={{ query|urlencode }}{% if request.GET.sort %}&sort={{ request.GET.sort|urlencode }}{% endif %}&page={{ num }}">{{ num }}</a>
         </li>
         {% endif %}
       {% endfor %}
       {% if products.has_next %}
       <li class="page-item">
-        <a class="page-link" href="?q={{ query }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}&page={{ products.next_page_number }}">
+        <a class="page-link" href="?q={{ query|urlencode }}{% if request.GET.sort %}&sort={{ request.GET.sort|urlencode }}{% endif %}&page={{ products.next_page_number }}">
           <i class="fas fa-angle-right"></i>
         </a>
       </li>

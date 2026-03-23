@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
 from django.db.models import Avg, Case, Count, IntegerField, Max, Min, Q, When
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import DetailView, FormView, ListView, TemplateView, View
@@ -318,10 +318,21 @@ class ProductSearchView(ListView):
     template_name = "products/search_results.html"
     context_object_name = "products"
     paginate_by = 12
+    ALLOWED_SORT_FIELDS = {
+        "-created_at",
+        "created_at",
+        "price",
+        "-price",
+        "name",
+        "-name",
+    }
 
     def get_queryset(self):
         query = self.request.GET.get("q", "")
         if query:
+            sort_by = self.request.GET.get("sort", "-created_at")
+            if sort_by not in self.ALLOWED_SORT_FIELDS:
+                sort_by = "-created_at"
             return (
                 Product.objects.filter(
                     Q(name__icontains=query)
@@ -330,7 +341,13 @@ class ProductSearchView(ListView):
                     is_active=True,
                 )
                 .select_related("category")
+                .annotate(
+                    approved_review_count=Count(
+                        "reviews", filter=Q(reviews__is_approved=True)
+                    )
+                )
                 .distinct()
+                .order_by(sort_by)
             )
         return Product.objects.none()
 
@@ -394,8 +411,6 @@ class ReviewSubmitView(LoginRequiredMixin, FormView):
         # Re-render the product detail page with the full ProductDetailView
         # context so that no template sections are missing.
         product = self.get_product()
-        from django.shortcuts import render  # noqa: PLC0415
-
         detail_view = ProductDetailView()
         detail_view.request = self.request
         detail_view.kwargs = self.kwargs
