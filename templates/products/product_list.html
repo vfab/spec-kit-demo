@@ -250,7 +250,7 @@ ShopHub{% endblock %} {% block content %}
       <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
         <span class="text-muted small">Active filters:</span>
         {% if request.GET.category %}
-        <a href="?{% if request.GET.sort %}sort={{ request.GET.sort|urlencode }}&{% endif %}{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price|urlencode }}&{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price|urlencode }}{% endif %}"
+        <a href="?{% if request.GET.sort %}sort={{ request.GET.sort|urlencode }}&{% endif %}{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}{% if request.GET.min_price %}min_price={{ request.GET.min_price|urlencode }}{% if request.GET.max_price %}&{% endif %}{% endif %}{% if request.GET.max_price %}max_price={{ request.GET.max_price|urlencode }}{% endif %}"
            class="badge bg-primary text-decoration-none">
           Category: {{ request.GET.category }} <span class="ms-1">×</span>
         </a>
@@ -289,6 +289,8 @@ ShopHub{% endblock %} {% block content %}
 </div>
 {% endblock %}
 {% block extra_scripts %}
+<script src="{% static 'js/filters.js' %}"></script>
+<script src="{% static 'js/comparison.js' %}"></script>
 <script>
   function applySorting() {
     const sortValue = document.getElementById("sortSelect").value;

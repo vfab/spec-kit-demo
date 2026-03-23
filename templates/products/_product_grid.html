@@ -1,7 +1,7 @@
 {# AJAX fragment — product grid only, no surrounding layout.
    Rendered when ?format=partial is present on ProductListView. #}
 {% if products %}
-<div class="row g-4">
+<div id="productsGrid" class="row g-4">
   {% for product in products %}
   <div class="col-lg-4 col-md-6 col-sm-6 product-item">
     {% include "products/_product_card.html" with product=product %}

@@ -88,6 +88,16 @@
         >
           <i class="fas fa-columns me-1"></i> Compare
         </button>
+        <noscript>
+          <style>.compare-btn { display: none !important; }</style>
+          <div class="d-grid mt-1">
+            <a href="{{ product.get_absolute_url }}"
+               class="btn btn-outline-info btn-sm disabled"
+               aria-disabled="true">
+              <i class="fas fa-columns me-1"></i> Compare (requires JavaScript)
+            </a>
+          </div>
+        </noscript>
       </div>
     </div>
   </div>

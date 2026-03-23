@@ -14,34 +14,41 @@
       "input[name='q'], input[name='search'], #searchInput"
     );
 
+    // Per-input state objects, kept for the single document click handler.
+    const inputStates = [];
+
     searchInputs.forEach(function (input) {
-      let dropdown = null;
-      let activeIndex = -1;
-      let abortController = null;
+      const state = {
+        input: input,
+        dropdown: null,
+        activeIndex: -1,
+        abortController: null,
+      };
+      inputStates.push(state);
 
       function createDropdown() {
-        if (dropdown) return;
-        dropdown = document.createElement("ul");
-        dropdown.className = "list-group position-absolute shadow w-100";
-        dropdown.style.zIndex = "9999";
-        dropdown.style.maxHeight = "300px";
-        dropdown.style.overflowY = "auto";
+        if (state.dropdown) return;
+        state.dropdown = document.createElement("ul");
+        state.dropdown.className = "list-group position-absolute shadow w-100";
+        state.dropdown.style.zIndex = "9999";
+        state.dropdown.style.maxHeight = "300px";
+        state.dropdown.style.overflowY = "auto";
         input.parentElement.style.position = "relative";
-        input.parentElement.appendChild(dropdown);
+        input.parentElement.appendChild(state.dropdown);
       }
 
       function clearDropdown() {
-        if (dropdown) {
-          dropdown.innerHTML = "";
-          activeIndex = -1;
+        if (state.dropdown) {
+          state.dropdown.innerHTML = "";
+          state.activeIndex = -1;
         }
       }
 
       function hideDropdown() {
-        if (dropdown) {
-          dropdown.remove();
-          dropdown = null;
-          activeIndex = -1;
+        if (state.dropdown) {
+          state.dropdown.remove();
+          state.dropdown = null;
+          state.activeIndex = -1;
         }
       }
 
@@ -51,11 +58,11 @@
           hideDropdown();
           return;
         }
-        if (abortController) abortController.abort();
-        abortController = new AbortController();
+        if (state.abortController) state.abortController.abort();
+        state.abortController = new AbortController();
 
         fetch(`${AUTOCOMPLETE_URL}?q=${encodeURIComponent(q)}`, {
-          signal: abortController.signal,
+          signal: state.abortController.signal,
         })
           .then((r) => r.json())
           .then(function (data) {
@@ -75,37 +82,47 @@
                 e.preventDefault();
                 window.location.href = item.url;
               });
-              dropdown.appendChild(li);
+              state.dropdown.appendChild(li);
             });
           })
           .catch(function () {});
       });
 
       input.addEventListener("keydown", function (e) {
-        if (!dropdown) return;
-        const items = dropdown.querySelectorAll("li");
+        if (!state.dropdown) return;
+        const items = state.dropdown.querySelectorAll("li");
         if (e.key === "ArrowDown") {
           e.preventDefault();
-          activeIndex = Math.min(activeIndex + 1, items.length - 1);
+          state.activeIndex = Math.min(state.activeIndex + 1, items.length - 1);
         } else if (e.key === "ArrowUp") {
           e.preventDefault();
-          activeIndex = Math.max(activeIndex - 1, -1);
-        } else if (e.key === "Enter" && activeIndex >= 0) {
+          state.activeIndex = Math.max(state.activeIndex - 1, -1);
+        } else if (e.key === "Enter" && state.activeIndex >= 0) {
           e.preventDefault();
-          window.location.href = items[activeIndex].dataset.url;
+          window.location.href = items[state.activeIndex].dataset.url;
           return;
         } else if (e.key === "Escape") {
           hideDropdown();
           return;
         }
         items.forEach(function (li, i) {
-          li.classList.toggle("active", i === activeIndex);
+          li.classList.toggle("active", i === state.activeIndex);
         });
       });
+    });
 
-      document.addEventListener("click", function (e) {
-        if (!input.contains(e.target) && (!dropdown || !dropdown.contains(e.target))) {
-          hideDropdown();
+    // Single document-level click handler for all inputs — avoids duplicate
+    // listeners when multiple search inputs exist on the same page.
+    document.addEventListener("click", function (e) {
+      inputStates.forEach(function (state) {
+        if (!state.dropdown) return;
+        if (
+          !state.input.contains(e.target) &&
+          !state.dropdown.contains(e.target)
+        ) {
+          state.dropdown.remove();
+          state.dropdown = null;
+          state.activeIndex = -1;
         }
       });
     });

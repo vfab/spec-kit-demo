@@ -26,7 +26,26 @@
           return response.text();
         })
         .then(function (html) {
-          productGrid.innerHTML = html;
+          // Parse the response so we can selectively update the product grid
+          // and any summary element outside the grid without a full page reload.
+          var tempContainer = document.createElement("div");
+          tempContainer.innerHTML = html;
+
+          var newProductGrid = tempContainer.querySelector("#productsGrid");
+          if (newProductGrid) {
+            productGrid.innerHTML = newProductGrid.outerHTML;
+          } else {
+            productGrid.innerHTML = html;
+          }
+
+          var currentSummary = document.getElementById("product-summary");
+          if (currentSummary) {
+            var newSummary = tempContainer.querySelector("#product-summary");
+            if (newSummary) {
+              currentSummary.innerHTML = newSummary.innerHTML;
+            }
+          }
+
           // Re-attach pagination link interceptors after swap
           attachPaginationLinks();
         })

@@ -142,8 +142,13 @@ class ProductListView(ListView):
             rv_map = {
                 p.pk: p
                 for p in Product.objects.filter(pk__in=rv_pks, is_active=True)
-                .only("name", "slug", "price")
+                .select_related("category")
                 .prefetch_related("images")
+                .annotate(
+                    approved_review_count=Count(
+                        "reviews", filter=Q(reviews__is_approved=True)
+                    )
+                )
             }
             context["recently_viewed"] = [rv_map[pk] for pk in rv_pks if pk in rv_map]
         else:
@@ -224,6 +229,7 @@ class ProductDetailView(DetailView):
         context["review_count"] = reviews.count()
         avg = reviews.aggregate(avg_rating=Avg("rating"))["avg_rating"]
         context["avg_rating"] = round(avg, 1) if avg else None
+        context["rounded_avg_rating"] = round(avg) if avg else 0
 
         # Review form — lazy import to avoid circular dep; None if not yet available
         try:
@@ -257,8 +263,13 @@ class ProductDetailView(DetailView):
             rv_map = {
                 p.pk: p
                 for p in Product.objects.filter(pk__in=rv_pks, is_active=True)
-                .only("name", "slug", "price")
+                .select_related("category")
                 .prefetch_related("images")
+                .annotate(
+                    approved_review_count=Count(
+                        "reviews", filter=Q(reviews__is_approved=True)
+                    )
+                )
             }
             # Preserve session order
             context["recently_viewed"] = [rv_map[p] for p in rv_pks if p in rv_map]
@@ -556,7 +567,7 @@ class ComparisonView(ListView):
         rows: list[list[list[str]]] = []  # rows[attr_idx][product_idx] = [values]
 
         for prod_idx, product in enumerate(compared):
-            for variant in product.variants.all():
+            for variant in product.variants.filter(is_active=True):
                 if variant.name not in attr_index:
                     attr_index[variant.name] = len(attr_order)
                     attr_order.append(variant.name)

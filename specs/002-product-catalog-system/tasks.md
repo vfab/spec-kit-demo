@@ -194,7 +194,7 @@
 
 ### Tests for User Story 8
 
-- [X] T036 [P] [US8] Write US8 tests in `tests/test_products.py`: add product stores PK in session; adding 4th product returns limit error; adding product from different category returns category error; remove clears PK from session; `GET /products/compare/` renders products table; empty comparison renders empty state; invalid `product_id` returns 400
+- [X] T036 [P] [US8] Write US8 tests in `tests/test_products.py`: add product stores PK in session; adding 4th product returns limit error; adding product from different category returns category error; remove clears PK from session; `GET /products/compare/` renders products table; empty comparison renders empty state; invalid `product_id` triggers redirect with `?compare_error=invalid`
 
 **Checkpoint**: User Story 8 complete — product comparison with session persistence works independently
 

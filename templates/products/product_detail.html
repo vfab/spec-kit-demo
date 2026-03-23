@@ -295,7 +295,7 @@ product.description|truncatewords:25 }}{% endblock %} {% block content %}
       <div class="text-muted">
         <span class="text-warning fs-5">
           {% for i in "12345" %}
-            {% if forloop.counter <= avg_rating %}
+            {% if forloop.counter <= rounded_avg_rating %}
             <i class="fas fa-star"></i>
             {% else %}
             <i class="far fa-star"></i>

@@ -1103,6 +1103,23 @@ class TestReviewSubmission:
         assert response.status_code == 302
         assert "review=submitted" in response.url
 
+    @pytest.mark.django_db
+    def test_invalid_rating_rerenders_detail_with_errors(self, client, db):
+        """Invalid rating POSTs re-render the product detail page with form errors."""
+        from tests.factories import ProductFactory, UserFactory
+
+        user = UserFactory()
+        product = ProductFactory()
+        client.force_login(user)
+        response = client.post(
+            reverse("products:submit_review", args=[product.slug]),
+            {"rating": 0, "body": "Bad rating"},
+        )
+        assert response.status_code == 200
+        form = response.context["review_form"]
+        assert form.errors
+        assert "rating" in form.errors
+
 
 # ---------------------------------------------------------------------------
 # T026 – US6: Admin management tests
