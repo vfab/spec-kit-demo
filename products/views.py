@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import DetailView, FormView, ListView, TemplateView, View
 
+from .forms import ReviewSubmissionForm
 from .models import Category, Product, ProductReview
 
 
@@ -235,13 +236,7 @@ class ProductDetailView(DetailView):
         context["avg_rating"] = round(avg, 1) if avg else None
         context["rounded_avg_rating"] = round(avg) if avg else 0
 
-        # Review form — lazy import to avoid circular dep; None if not yet available
-        try:
-            from .forms import ReviewSubmissionForm  # noqa: PLC0415
-
-            context["review_form"] = ReviewSubmissionForm()
-        except ImportError:
-            context["review_form"] = None
+        context["review_form"] = ReviewSubmissionForm()
 
         # Current user's existing review (None for anonymous users)
         if self.request.user.is_authenticated:
@@ -396,8 +391,6 @@ class ReviewSubmitView(LoginRequiredMixin, FormView):
     http_method_names = ["post", "options"]
 
     def get_form_class(self):
-        from .forms import ReviewSubmissionForm  # noqa: PLC0415
-
         return ReviewSubmissionForm
 
     def get_product(self):
@@ -447,7 +440,7 @@ def _redirect_with_error(referrer, error_code):
     params = parse_qs(parsed.query, keep_blank_values=True)
     params["compare_error"] = [error_code]
     new_query = urlencode(params, doseq=True)
-    new_url = urlunparse(parsed._replace(query=new_query))
+    new_url = str(urlunparse(parsed._replace(query=new_query)))
     return redirect(new_url)
 
 

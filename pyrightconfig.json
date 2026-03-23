@@ -8,5 +8,6 @@
   "reportAttributeAccessIssue": "none",
   "reportUnknownMemberType": "none",
   "useLibraryCodeForTypes": true,
-  "reportMissingModuleSource": "none"
+  "reportMissingModuleSource": "none",
+  "reportMissingImports": "none"
 }
