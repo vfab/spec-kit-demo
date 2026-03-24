@@ -1132,9 +1132,9 @@ class TestAdminManagement:
     @pytest.mark.django_db
     def test_bulk_approve_sets_is_approved_true(self, admin_user, db):
         """bulk_approve action marks selected reviews as approved."""
-        from unittest.mock import MagicMock
-
         from django.contrib.admin.sites import AdminSite
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.test import RequestFactory
 
         from products.admin import ProductReviewAdmin
         from products.models import ProductReview
@@ -1144,7 +1144,11 @@ class TestAdminManagement:
         review2 = ProductReviewFactory(is_approved=False)
         site = AdminSite()
         ma = ProductReviewAdmin(ProductReview, site)
-        request = MagicMock()
+        factory = RequestFactory()
+        request = factory.post("/admin/")
+        request.session = {}
+        messages = FallbackStorage(request)
+        setattr(request, "_messages", messages)
         queryset = ProductReview.objects.filter(pk__in=[review1.pk, review2.pk])
         ma.bulk_approve(request, queryset)
         review1.refresh_from_db()

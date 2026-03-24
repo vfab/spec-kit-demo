@@ -3,6 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Expose CSRF token as a meta tag so comparison.js can POST from any page,
+         including anonymous GET pages where no form csrf_token tag exists. -->
+    <meta name="csrf-token" content="{{ csrf_token }}" />
 
     <title>{% block title %}E-Commerce Store{% endblock %}</title>
     <meta
@@ -261,6 +264,9 @@
     <!-- Custom JS -->
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/autocomplete.js' %}"></script>
+    <!-- comparison.js loaded globally so compare buttons work on every page
+         that renders _product_card.html (list, category, search, home). -->
+    <script src="{% static 'js/comparison.js' %}"></script>
 
     {% include "products/_compare_widget.html" %}
 

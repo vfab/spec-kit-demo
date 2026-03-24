@@ -190,7 +190,7 @@ product.description|truncatewords:25 }}{% endblock %} {% block content %}
             {% if variants %}
             <tr>
               <td><strong>Variants:</strong></td>
-              <td>{{ variants.count }} options available</td>
+              <td>{{ variants|length }} options available</td>
             </tr>
             {% endif %}
             <tr>

@@ -738,3 +738,104 @@ class TestCheckoutFormClean:
         data["shipping_same_as_billing"] = "False"
         form = CheckoutForm(data=data)
         assert form.is_valid(), form.errors
+
+
+# ---------------------------------------------------------------------------
+# Cart migration on login – accounts/views.py
+# ---------------------------------------------------------------------------
+
+
+class TestCartMergeOnLogin:
+    """_merge_anonymous_cart() called from CustomLoginView.form_valid()
+    (Task 3.2 – session → user cart merge)."""
+
+    LOGIN_URL = "/accounts/login/"
+
+    def _login_via_view(self, client, user, password="testpass123"):
+        """POST to the login view (fires view-level cart merge logic)."""
+        return client.post(
+            self.LOGIN_URL,
+            {"username": user.username, "password": password},
+            follow=False,
+        )
+
+    @pytest.mark.django_db
+    def test_new_items_transferred_to_user_cart(self, client, user, product):
+        """Anonymous cart items that don't exist in the user cart are moved."""
+        # Set a known password (root conftest user already has testpass123,
+        # but tests/conftest UserFactory users do not — set it explicitly).
+        user.set_password("testpass123")
+        user.save()
+
+        # CartView creates a session AND a session-keyed Cart in one hit.
+        client.get(reverse("orders:cart"))
+        session_key = client.session.session_key
+        # Get the cart already created by CartView (do NOT create a duplicate).
+        session_cart = Cart.objects.get(session_key=session_key)
+        CartItem.objects.create(cart=session_cart, product=product, quantity=3)
+
+        # Log in via the actual view so form_valid() captures old_session_key.
+        response = self._login_via_view(client, user)
+        assert response.status_code == 302  # redirect → login succeeded
+
+        user_cart = Cart.objects.get(user=user)
+        assert user_cart.items.count() == 1
+        assert user_cart.items.first().quantity == 3
+        # Session cart deleted
+        assert not Cart.objects.filter(session_key=session_key).exists()
+
+    @pytest.mark.django_db
+    def test_quantities_summed_for_existing_items(self, client, user, product):
+        """When an item already in the user cart is also in the session cart,
+        quantities are summed rather than overwritten."""
+        user.set_password("testpass123")
+        user.save()
+
+        # Pre-existing user cart with 2 of the product
+        user_cart = Cart.objects.create(user=user)
+        CartItem.objects.create(cart=user_cart, product=product, quantity=2)
+
+        # Anonymous session cart also has 3 of the same product.
+        client.get(reverse("orders:cart"))
+        session_key = client.session.session_key
+        session_cart = Cart.objects.get(session_key=session_key)
+        CartItem.objects.create(cart=session_cart, product=product, quantity=3)
+
+        response = self._login_via_view(client, user)
+        assert response.status_code == 302
+
+        user_cart.refresh_from_db()
+        item = user_cart.items.get(product=product)
+        assert item.quantity == 5  # 2 existing + 3 from session
+        assert not Cart.objects.filter(session_key=session_key).exists()
+
+    @pytest.mark.django_db
+    def test_no_session_cart_is_a_noop(self, client, user):
+        """Login with no session cart leaves cart state unchanged."""
+        user.set_password("testpass123")
+        user.save()
+        Cart.objects.filter(user=user).delete()
+
+        # Hit any page that creates a session but NOT a Cart.
+        # The accounts login page itself doesn't call get_or_create_cart.
+        response = self._login_via_view(client, user)
+        assert response.status_code == 302
+
+        # No stray session-keyed cart was created
+        assert not Cart.objects.filter(session_key__isnull=False, user=None).exists()
+
+    @pytest.mark.django_db
+    def test_empty_session_cart_is_deleted(self, client, user):
+        """An empty session cart is removed on login."""
+        user.set_password("testpass123")
+        user.save()
+
+        # CartView creates the session cart (empty).
+        client.get(reverse("orders:cart"))
+        session_key = client.session.session_key
+        # No items in the session cart.
+
+        response = self._login_via_view(client, user)
+        assert response.status_code == 302
+
+        assert not Cart.objects.filter(session_key=session_key).exists()
