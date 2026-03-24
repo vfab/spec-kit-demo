@@ -31,3 +31,6 @@ media/
 
 runtests.sh
 .env.local
+
+# Editor
+.vscode/settings.json
