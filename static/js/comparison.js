@@ -15,18 +15,12 @@
     return url || "/products/compare/add/";
   })();
 
-  /**
-   * Escape user-supplied text before injecting into innerHTML.
-   * Prevents XSS when product names contain HTML special characters.
-   */
-  function escapeHtml(str) {
-    const d = document.createElement("div");
-    d.appendChild(document.createTextNode(str));
-    return d.innerHTML;
-  }
-
   function getCSRFToken() {
-    const cookie = document.cookie
+    // Prefer the meta tag (set on every page via base.html) so compare buttons
+    // work for anonymous users on GET pages before any form cookie is written.
+    var meta = document.querySelector("meta[name='csrf-token']");
+    if (meta) return meta.getAttribute("content") || "";
+    var cookie = document.cookie
       .split(";")
       .map(function (c) { return c.trim(); })
       .find(function (c) { return c.startsWith("csrftoken="); });
@@ -65,13 +59,10 @@
   }
 
   function refreshWidget() {
-    // Re-fetch the compare widget via a lightweight endpoint.
-    // Simplest approach: reload the widget element if it exists.
-    const widget = document.getElementById("compare-widget");
-    if (widget) {
-      // Force a reload of the page partial — simplest implementation
-      // is to update the badge from a counter in localStorage.
-    }
+    // Reload the page so the compare widget badge and button states reflect
+    // the updated session list.  A future enhancement could replace this with
+    // a lightweight fetch to a dedicated widget-reload endpoint.
+    window.location.reload();
   }
 
   document.addEventListener("click", function (e) {
@@ -117,9 +108,7 @@
             "success",
             "fas fa-check"
           );
-          // Update the compare widget by reloading the page silently
-          // (full solution would use a dedicated API endpoint)
-          setTimeout(function () { window.location.reload(); }, 800);
+          setTimeout(refreshWidget, 800);
         }
       })
       .catch(function () {

@@ -172,7 +172,11 @@ class ProductDetailView(DetailView):
     slug_field = "slug"
 
     def get_queryset(self):
-        return Product.objects.filter(is_active=True).select_related("category")
+        return (
+            Product.objects.filter(is_active=True)
+            .select_related("category")
+            .prefetch_related("images", "variants")
+        )
 
     def get_object(self, queryset=None):
         """Return the product, using the cache when available.
@@ -218,9 +222,11 @@ class ProductDetailView(DetailView):
             .exclude(id=product.id)[:4]
         )
 
-        # Product images and variants — prefetched to avoid per-image DB hits
+        # Product images and variants — use prefetched data from get_queryset()
+        # to stay within the intended query budget for this view.
         context["images"] = product.images.all()
-        context["variants"] = product.variants.filter(is_active=True)
+        # Filter in Python so the .filter() call doesn't bypass the prefetch cache.
+        context["variants"] = [v for v in product.variants.all() if v.is_active]
 
         # Approved reviews with aggregate rating (T008)
         reviews = ProductReview.objects.filter(
@@ -564,7 +570,11 @@ class ComparisonView(ListView):
         rows: list[list[list[str]]] = []  # rows[attr_idx][product_idx] = [values]
 
         for prod_idx, product in enumerate(compared):
-            for variant in product.variants.filter(is_active=True):
+            # Iterate the prefetched variants and filter in Python to avoid
+            # an extra DB query per product (N+1) from .filter() bypassing cache.
+            for variant in product.variants.all():
+                if not variant.is_active:
+                    continue
                 if variant.name not in attr_index:
                     attr_index[variant.name] = len(attr_order)
                     attr_order.append(variant.name)
