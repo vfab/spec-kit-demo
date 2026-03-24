@@ -10,6 +10,15 @@ def global_context(request):
         "categories": Category.objects.filter(parent=None, is_active=True)[:6],
     }
 
+    # Normalise the comparison session dict so the compare widget always has
+    # an 'items' list.  Sessions created before the items key was added would
+    # otherwise cause the template to iterate dict.items() (the method) and
+    # produce broken output.  We fix them in place once here so the template
+    # always receives a well-formed structure.
+    comparison = request.session.get("comparison")
+    if isinstance(comparison, dict) and "items" not in comparison:
+        comparison["items"] = []
+        request.session.modified = True
     # Add cart information
     cart = None
     cart_items_count = 0

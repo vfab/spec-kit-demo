@@ -430,3 +430,17 @@ def on_variant_change(sender, instance, **kwargs):
     """
     cache.delete(f"product_detail:{instance.product_id}")
     cache.delete(f"product_detail_slug:{instance.product.slug}")
+
+
+@receiver(post_save, sender=ProductReview)
+@receiver(post_delete, sender=ProductReview)
+def on_review_change(sender, instance, **kwargs):  # noqa: ARG001
+    """Invalidate the parent product's cache when a review is saved/deleted.
+
+    ProductDetailView.get_queryset() annotates review_count/avg_rating onto
+    the cached Product object.  Without this signal those aggregates stay
+    stale until the TTL expires whenever a review is approved, added or
+    removed.
+    """
+    cache.delete(f"product_detail:{instance.product_id}")
+    cache.delete(f"product_detail_slug:{instance.product.slug}")

@@ -11,7 +11,14 @@
       Comparing {{ comparison.pks|length }} / 3 product{{ comparison.pks|length|pluralize }}
     </small>
     <div class="d-flex gap-1 flex-wrap">
+      {# Guard: old sessions without an 'items' key fall back to dict.items()
+         (a method), which when called yields (key, value) tuples. The inner
+         {% if item.pk %} skips those tuples safely. Sessions are also
+         normalised at request time in global_context so this is belt-and-
+         suspenders protection for any edge-case where normalisation hasn't
+         run yet. #}
       {% for item in comparison.items %}
+      {% if item.pk %}
       <div class="badge bg-secondary py-2 px-2">
         <form method="post" action="{% url 'products:compare_remove' %}" class="d-inline">
           {% csrf_token %}
@@ -25,6 +32,7 @@
           </button>
         </form>
       </div>
+      {% endif %}
       {% endfor %}
     </div>
   </div>

@@ -85,6 +85,17 @@
       // and compare_error parameters are reliably readable.
     })
       .then(function (response) {
+        // Hard failures: 403 CSRF, 404 not found, 5xx server error, etc.
+        // These should never resolve to a compare_error URL, so treat them
+        // as errors immediately rather than silently showing a success toast.
+        if (!response.ok) {
+          if (response.status === 403) {
+            showToast("Session expired. Please refresh and try again.", "danger", "fas fa-times");
+          } else {
+            showToast("Could not add product. Please try again.", "danger", "fas fa-times");
+          }
+          return;
+        }
         // Django redirects to the 'next' URL, possibly with an error param.
         // With default redirect handling, response.url is the final URL.
         const finalUrl = response.url;
