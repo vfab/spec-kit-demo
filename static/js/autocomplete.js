@@ -17,7 +17,18 @@
     // Per-input state objects, kept for the single document click handler.
     const inputStates = [];
 
-    searchInputs.forEach(function (input) {
+    searchInputs.forEach(function (input, inputIdx) {
+      // Unique IDs scoped to this input instance so multiple search boxes
+      // on the same page each get their own listbox.
+      const listboxId = `autocomplete-listbox-${inputIdx}`;
+
+      // ARIA combobox pattern: annotate the input before any interaction.
+      input.setAttribute("role", "combobox");
+      input.setAttribute("aria-haspopup", "listbox");
+      input.setAttribute("aria-expanded", "false");
+      input.setAttribute("aria-autocomplete", "list");
+      input.setAttribute("aria-controls", listboxId);
+
       const state = {
         input: input,
         dropdown: null,
@@ -29,18 +40,22 @@
       function createDropdown() {
         if (state.dropdown) return;
         state.dropdown = document.createElement("ul");
+        state.dropdown.id = listboxId;
+        state.dropdown.setAttribute("role", "listbox");
         state.dropdown.className = "list-group position-absolute shadow w-100";
         state.dropdown.style.zIndex = "9999";
         state.dropdown.style.maxHeight = "300px";
         state.dropdown.style.overflowY = "auto";
         input.parentElement.style.position = "relative";
         input.parentElement.appendChild(state.dropdown);
+        input.setAttribute("aria-expanded", "true");
       }
 
       function clearDropdown() {
         if (state.dropdown) {
           state.dropdown.innerHTML = "";
           state.activeIndex = -1;
+          input.removeAttribute("aria-activedescendant");
         }
       }
 
@@ -49,6 +64,8 @@
           state.dropdown.remove();
           state.dropdown = null;
           state.activeIndex = -1;
+          input.setAttribute("aria-expanded", "false");
+          input.removeAttribute("aria-activedescendant");
         }
       }
 
@@ -74,6 +91,10 @@
             clearDropdown();
             data.results.forEach(function (item, idx) {
               const li = document.createElement("li");
+              const optionId = `${listboxId}-option-${idx}`;
+              li.id = optionId;
+              li.setAttribute("role", "option");
+              li.setAttribute("aria-selected", "false");
               li.className = "list-group-item list-group-item-action cursor-pointer";
               li.textContent = item.name;
               li.dataset.url = item.url;
@@ -106,8 +127,15 @@
           return;
         }
         items.forEach(function (li, i) {
-          li.classList.toggle("active", i === state.activeIndex);
+          const isActive = i === state.activeIndex;
+          li.classList.toggle("active", isActive);
+          li.setAttribute("aria-selected", isActive ? "true" : "false");
         });
+        if (state.activeIndex >= 0) {
+          input.setAttribute("aria-activedescendant", items[state.activeIndex].id);
+        } else {
+          input.removeAttribute("aria-activedescendant");
+        }
       });
     });
 

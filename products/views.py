@@ -176,6 +176,14 @@ class ProductDetailView(DetailView):
             Product.objects.filter(is_active=True)
             .select_related("category")
             .prefetch_related("images", "variants")
+            .annotate(
+                review_count=Count(
+                    "reviews", filter=Q(reviews__is_approved=True)
+                ),
+                avg_rating=Avg(
+                    "reviews__rating", filter=Q(reviews__is_approved=True)
+                ),
+            )
         )
 
     def get_object(self, queryset=None):
@@ -228,17 +236,14 @@ class ProductDetailView(DetailView):
         # Filter in Python so the .filter() call doesn't bypass the prefetch cache.
         context["variants"] = [v for v in product.variants.all() if v.is_active]
 
-        # Approved reviews with aggregate rating (T008)
-        reviews = ProductReview.objects.filter(
+        # Approved reviews — list for display (T008).
+        # Aggregate counts/average are annotated on the product queryset in
+        # get_queryset() so no separate aggregate() query is needed here.
+        context["reviews"] = ProductReview.objects.filter(
             product=product, is_approved=True
         ).select_related("user")
-        context["reviews"] = reviews
-        aggregates = reviews.aggregate(
-            review_count=Count("id"),
-            avg_rating=Avg("rating"),
-        )
-        context["review_count"] = aggregates["review_count"] or 0
-        avg = aggregates["avg_rating"]
+        context["review_count"] = product.review_count or 0
+        avg = product.avg_rating
         context["avg_rating"] = round(avg, 1) if avg else None
         context["rounded_avg_rating"] = round(avg) if avg else 0
 
@@ -470,9 +475,10 @@ class ComparisonAddView(View):
 
         product = get_object_or_404(Product, pk=product_id, is_active=True)
 
-        comparison = request.session.get("comparison", {"pks": [], "category_id": None})
+        comparison = request.session.get("comparison", {"pks": [], "category_id": None, "items": []})
         pks = comparison.get("pks", [])
         category_id = comparison.get("category_id")
+        items = comparison.get("items", [])
 
         # Already in list — no-op
         if product_id in pks:
@@ -487,9 +493,11 @@ class ComparisonAddView(View):
             return _redirect_with_error(referrer, "limit")
 
         pks.append(product_id)
+        items.append({"pk": product_id, "name": product.name})
         request.session["comparison"] = {
             "pks": pks,
             "category_id": product.category_id,
+            "items": items,
         }
         request.session.modified = True
         return redirect(referrer)
@@ -511,7 +519,7 @@ class ComparisonRemoveView(View):
 
         # "clear" sentinel: wipe the entire comparison list at once.
         if product_id_raw == "clear":
-            request.session["comparison"] = {"pks": [], "category_id": None}
+            request.session["comparison"] = {"pks": [], "category_id": None, "items": []}
             request.session.modified = True
             return redirect(referrer)
 
@@ -520,11 +528,13 @@ class ComparisonRemoveView(View):
         except (ValueError, TypeError):
             return redirect(referrer)
 
-        comparison = request.session.get("comparison", {"pks": [], "category_id": None})
+        comparison = request.session.get("comparison", {"pks": [], "category_id": None, "items": []})
         pks = [p for p in comparison.get("pks", []) if p != product_id]
+        items = [item for item in comparison.get("items", []) if item["pk"] != product_id]
         request.session["comparison"] = {
             "pks": pks,
             "category_id": comparison.get("category_id") if pks else None,
+            "items": items,
         }
         request.session.modified = True
         return redirect(referrer)
