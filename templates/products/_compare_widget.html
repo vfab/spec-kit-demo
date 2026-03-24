@@ -12,7 +12,7 @@
     </small>
     <div class="d-flex gap-1 flex-wrap">
       {% for item in comparison.items %}
-      <span class="badge bg-secondary py-2 px-2">
+      <div class="badge bg-secondary py-2 px-2">
         <form method="post" action="{% url 'products:compare_remove' %}" class="d-inline">
           {% csrf_token %}
           <input type="hidden" name="product_id" value="{{ item.pk }}">
@@ -24,7 +24,7 @@
             {{ item.name }} ×
           </button>
         </form>
-      </span>
+      </div>
       {% endfor %}
     </div>
   </div>

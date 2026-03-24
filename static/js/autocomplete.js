@@ -68,6 +68,9 @@
           input.removeAttribute("aria-activedescendant");
         }
       }
+      // Expose on state so the document-level click handler
+      // can call it and keep ARIA attributes in sync.
+      state.hide = hideDropdown;
 
       input.addEventListener("input", function () {
         const q = this.value.trim();
@@ -148,9 +151,9 @@
           !state.input.contains(e.target) &&
           !state.dropdown.contains(e.target)
         ) {
-          state.dropdown.remove();
-          state.dropdown = null;
-          state.activeIndex = -1;
+          // Call hideDropdown via state.hide so aria-expanded and
+          // aria-activedescendant are reset (not just the DOM node removed).
+          state.hide();
         }
       });
     });

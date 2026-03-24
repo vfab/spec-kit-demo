@@ -61,16 +61,16 @@ class ProductListView(ListView):
         "-name",
     }
 
-    def get_queryset(self):
+    def _base_queryset(self):
+        """Filtered product queryset without the approved_review_count annotation.
+
+        Used for aggregates (price range) that don't need the reviews JOIN so
+        those queries don't pay for an unnecessary GROUP BY.
+        """
         queryset = (
             Product.objects.filter(is_active=True)
             .select_related("category")
             .prefetch_related("images", "variants")
-            .annotate(
-                approved_review_count=Count(
-                    "reviews", filter=Q(reviews__is_approved=True)
-                )
-            )
         )
 
         # Search filter
@@ -116,6 +116,13 @@ class ProductListView(ListView):
 
         return queryset
 
+    def get_queryset(self):
+        return self._base_queryset().annotate(
+            approved_review_count=Count(
+                "reviews", filter=Q(reviews__is_approved=True)
+            )
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -130,9 +137,9 @@ class ProductListView(ListView):
             )
         context["categories"] = categories
 
-        # Price range for filter — use the active queryset so bounds
-        # reflect any applied category/search filters (L2).
-        price_range = self.get_queryset().aggregate(
+        # Price range for filter — use the base (un-annotated) queryset so
+        # the aggregate doesn't pay for the approved_review_count JOIN (L2).
+        price_range = self._base_queryset().aggregate(
             min_price=Min("price"), max_price=Max("price")
         )
         context["price_range"] = price_range
@@ -405,7 +412,12 @@ class ReviewSubmitView(LoginRequiredMixin, FormView):
         return ReviewSubmissionForm
 
     def get_product(self):
-        return get_object_or_404(Product, slug=self.kwargs["slug"], is_active=True)
+        # Must use ProductDetailView's annotated queryset so the product object
+        # carries review_count and avg_rating; get_object_or_404 on un-annotated
+        # Product would cause AttributeError when get_context_data accesses them.
+        return get_object_or_404(
+            ProductDetailView().get_queryset(), slug=self.kwargs["slug"]
+        )
 
     def form_valid(self, form):
         product = self.get_product()
