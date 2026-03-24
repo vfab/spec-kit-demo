@@ -12,9 +12,59 @@ from django.views.generic import CreateView, DetailView, UpdateView
 from .forms import UserProfileForm, UserRegistrationForm
 from .models import UserProfile
 
-# Imported here (not at module top) to avoid a circular import:
-# accounts -> orders would create a cycle since orders already imports accounts.
-# The lazy import is moved here as a module-level comment to make it explicit.
+# Lazy imports from `orders` live inside methods/functions below to avoid the
+# accounts ↔ orders circular import (orders.models imports auth.User).
+
+
+def _merge_anonymous_cart(request, user, old_session_key):
+    """Move items from an anonymous session cart into the user's persistent cart.
+
+    Called after login/registration once the session key has been rotated.
+    `old_session_key` must be captured *before* Django's login() calls
+    cycle_key() — the caller is responsible for this.
+    """
+    if not old_session_key:
+        return
+
+    # Lazy import to avoid accounts ↔ orders circular dependency.
+    from django.db import transaction  # noqa: PLC0415
+
+    from orders.models import Cart, CartItem  # noqa: PLC0415
+
+    try:
+        session_cart = Cart.objects.get(session_key=old_session_key, user=None)
+    except Cart.DoesNotExist:
+        return
+
+    session_items = list(session_cart.items.select_related("product", "variant"))
+    if not session_items:
+        session_cart.delete()
+        return
+
+    try:
+        with transaction.atomic():
+            user_cart, _ = Cart.objects.get_or_create(user=user)
+            for item in session_items:
+                existing = CartItem.objects.filter(
+                    cart=user_cart,
+                    product=item.product,
+                    variant=item.variant,
+                ).first()
+                if existing:
+                    existing.quantity += item.quantity
+                    existing.save(update_fields=["quantity"])
+                else:
+                    item.cart = user_cart
+                    item.save(update_fields=["cart"])
+            session_cart.delete()
+    except Exception:
+        import logging  # noqa: PLC0415
+
+        logging.getLogger(__name__).exception(
+            "Failed to merge session cart %s into user cart for user %s",
+            old_session_key,
+            user.pk,
+        )
 
 
 class RegisterView(CreateView):
@@ -27,6 +77,8 @@ class RegisterView(CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        # Capture the session key BEFORE login() rotates it via cycle_key().
+        old_session_key = self.request.session.session_key
         # Log in the user after successful registration.
         # Specify the backend explicitly because multiple AUTHENTICATION_BACKENDS
         # are configured (AxesStandaloneBackend + ModelBackend); Django cannot
@@ -36,6 +88,7 @@ class RegisterView(CreateView):
             self.object,
             backend="django.contrib.auth.backends.ModelBackend",
         )
+        _merge_anonymous_cart(self.request, self.object, old_session_key)
         messages.success(self.request, "Registration successful! Welcome to our store.")
         return response
 
@@ -50,8 +103,13 @@ class CustomLoginView(LoginView):
         return reverse_lazy("products:home")
 
     def form_valid(self, form):
+        # Capture old session key BEFORE super().form_valid() calls login() →
+        # cycle_key(), which rotates the session key.
+        old_session_key = self.request.session.session_key
         messages.success(self.request, f"Welcome back, {form.get_user().username}!")
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        _merge_anonymous_cart(self.request, form.get_user(), old_session_key)
+        return response
 
 
 class CustomLogoutView(LogoutView):
