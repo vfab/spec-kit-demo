@@ -260,6 +260,9 @@
 
     <!-- Custom JS -->
     <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/autocomplete.js' %}"></script>
+
+    {% include "products/_compare_widget.html" %}
 
     {% block extra_scripts %}{% endblock %}
   </body>

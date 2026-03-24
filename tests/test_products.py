@@ -723,3 +723,637 @@ class TestProductListViewFilters:
             {"sort": "invalid_field_that_doesnt_exist"},
         )
         assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# T007 – US1: Category page tests
+# ---------------------------------------------------------------------------
+
+
+class TestCategoryViewExtended:
+    """T007 – US1: Category page shows products, subcategories, sorting."""
+
+    @pytest.mark.django_db
+    def test_category_page_renders_with_products(self, client, category, product):
+        """Category page responds 200 and includes the product."""
+        response = client.get(reverse("products:category", args=[category.slug]))
+        assert response.status_code == 200
+        assert product in response.context["products"]
+
+    @pytest.mark.django_db
+    def test_category_shows_subcategory_links(self, client, db):
+        """Subcategories of the current category appear in context."""
+        from tests.factories import CategoryFactory, ProductFactory
+
+        parent = CategoryFactory(name="Parent Cat")
+        child = CategoryFactory(name="Child Cat", parent=parent)
+        ProductFactory(category=parent)
+        response = client.get(reverse("products:category", args=[parent.slug]))
+        assert response.status_code == 200
+        subcategories = list(response.context["subcategories"])
+        assert child in subcategories
+
+    @pytest.mark.django_db
+    def test_sort_by_price_ascending(self, client, db):
+        """sort=price returns products in ascending price order."""
+        from decimal import Decimal
+
+        from tests.factories import CategoryFactory, ProductFactory
+
+        cat = CategoryFactory()
+        ProductFactory(category=cat, price=Decimal("50.00"))
+        ProductFactory(category=cat, price=Decimal("10.00"))
+        ProductFactory(category=cat, price=Decimal("30.00"))
+        response = client.get(
+            reverse("products:category", args=[cat.slug]), {"sort": "price"}
+        )
+        assert response.status_code == 200
+        products = list(response.context["products"])
+        prices = [p.price for p in products]
+        assert prices == sorted(prices)
+
+    @pytest.mark.django_db
+    def test_invalid_sort_falls_back(self, client, category, product):
+        """An invalid sort value is ignored and the page still renders."""
+        response = client.get(
+            reverse("products:category", args=[category.slug]),
+            {"sort": "malicious_field"},
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_category_404_for_nonexistent_slug(self, client, db):
+        """Category page returns 404 for a slug that doesn't exist."""
+        response = client.get(reverse("products:category", args=["does-not-exist"]))
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_inactive_products_excluded(self, client, db):
+        """Inactive products do not appear on the category page."""
+        from tests.factories import CategoryFactory, ProductFactory
+
+        cat = CategoryFactory()
+        active = ProductFactory(category=cat, is_active=True)
+        inactive = ProductFactory(category=cat, is_active=False)
+        response = client.get(reverse("products:category", args=[cat.slug]))
+        products = list(response.context["products"])
+        assert active in products
+        assert inactive not in products
+
+    @pytest.mark.django_db
+    def test_child_category_products_appear_on_parent_page(self, client, db):
+        """Products in child categories are included on the parent category page."""
+        from tests.factories import CategoryFactory, ProductFactory
+
+        parent = CategoryFactory()
+        child = CategoryFactory(parent=parent)
+        child_product = ProductFactory(category=child)
+        response = client.get(reverse("products:category", args=[parent.slug]))
+        assert response.status_code == 200
+        products = list(response.context["products"])
+        assert child_product in products
+
+
+# ---------------------------------------------------------------------------
+# T010 – US2: Product detail review context tests
+# ---------------------------------------------------------------------------
+
+
+class TestProductDetailExtended:
+    """T010 – US2: Product detail page review context."""
+
+    @pytest.mark.django_db
+    def test_context_includes_review_form_and_reviews(self, client, product):
+        """Product detail context contains review_form and reviews keys."""
+        response = client.get(reverse("products:product_detail", args=[product.slug]))
+        assert response.status_code == 200
+        assert "reviews" in response.context
+        assert "review_form" in response.context
+        assert "review_count" in response.context
+
+    @pytest.mark.django_db
+    def test_only_approved_reviews_visible(self, client, db):
+        """Unapproved reviews are excluded from the reviews context."""
+        from tests.factories import ProductFactory, ProductReviewFactory, UserFactory
+
+        product = ProductFactory()
+        approved = ProductReviewFactory(product=product, is_approved=True, rating=4)
+        unapproved = ProductReviewFactory(
+            product=product,
+            user=UserFactory(),
+            is_approved=False,
+            rating=3,
+        )
+        response = client.get(reverse("products:product_detail", args=[product.slug]))
+        reviews = list(response.context["reviews"])
+        assert approved in reviews
+        assert unapproved not in reviews
+
+    @pytest.mark.django_db
+    def test_avg_rating_reflects_approved_reviews(self, client, db):
+        """avg_rating is computed only from approved reviews."""
+        from tests.factories import ProductFactory, ProductReviewFactory, UserFactory
+
+        product = ProductFactory()
+        ProductReviewFactory(product=product, is_approved=True, rating=4)
+        ProductReviewFactory(
+            product=product,
+            user=UserFactory(),
+            is_approved=True,
+            rating=2,
+        )
+        response = client.get(reverse("products:product_detail", args=[product.slug]))
+        avg = response.context["avg_rating"]
+        assert avg is not None
+        # 4 + 2 = 6 / 2 = 3.0
+        assert float(avg) == pytest.approx(3.0)
+
+    @pytest.mark.django_db
+    def test_inactive_product_returns_404(self, client, db):
+        """Accessing an inactive product detail page returns 404."""
+        from tests.factories import ProductFactory
+
+        inactive = ProductFactory(is_active=False)
+        response = client.get(reverse("products:product_detail", args=[inactive.slug]))
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_user_existing_review_in_context(self, client, db):
+        """Authenticated user's own review is exposed in user_existing_review."""
+        from tests.factories import ProductFactory, ProductReviewFactory, UserFactory
+
+        user = UserFactory()
+        product = ProductFactory()
+        review = ProductReviewFactory(
+            product=product, user=user, is_approved=True, rating=5
+        )
+        client.force_login(user)
+        response = client.get(reverse("products:product_detail", args=[product.slug]))
+        assert response.context["user_existing_review"] == review
+
+
+# ---------------------------------------------------------------------------
+# T014 – US3: Autocomplete view and search results tests
+# ---------------------------------------------------------------------------
+
+
+class TestAutocomplete:
+    """T014 – US3: Autocomplete JSON endpoint."""
+
+    @pytest.mark.django_db
+    def test_returns_json_for_two_plus_chars(self, client, product):
+        """Querying with >= 2 chars returns JSON with results list."""
+        q = product.name[:3]
+        response = client.get(reverse("products:autocomplete"), {"q": q})
+        assert response.status_code == 200
+        data = response.json()
+        assert "results" in data
+        assert any(r["name"] == product.name for r in data["results"])
+
+    @pytest.mark.django_db
+    def test_returns_empty_for_one_char(self, client, product):
+        """Querying with < 2 chars returns empty results."""
+        response = client.get(reverse("products:autocomplete"), {"q": "a"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["results"] == []
+
+    @pytest.mark.django_db
+    def test_returns_empty_for_no_query(self, client, product):
+        """Querying with no q param returns empty results."""
+        response = client.get(reverse("products:autocomplete"))
+        assert response.status_code == 200
+        assert response.json()["results"] == []
+
+    @pytest.mark.django_db
+    def test_results_include_url(self, client, product):
+        """Each result dict includes a url key."""
+        q = product.name[:4]
+        response = client.get(reverse("products:autocomplete"), {"q": q})
+        data = response.json()
+        if data["results"]:
+            assert "url" in data["results"][0]
+
+    @pytest.mark.django_db
+    def test_inactive_products_excluded(self, client, db):
+        """Inactive products do not appear in autocomplete results."""
+        from tests.factories import ProductFactory
+
+        active = ProductFactory(name="Visible Widget", is_active=True)
+        inactive = ProductFactory(name="Visible Widget Inactive", is_active=False)
+        response = client.get(reverse("products:autocomplete"), {"q": "Visible"})
+        names = [r["name"] for r in response.json()["results"]]
+        assert active.name in names
+        assert inactive.name not in names
+
+
+class TestSearchResults:
+    """T014 – US3: Search results page."""
+
+    @pytest.mark.django_db
+    def test_search_results_shows_count(self, client, product):
+        """Search results page renders a result count in context."""
+        response = client.get(reverse("products:search"), {"q": product.name[:4]})
+        assert response.status_code == 200
+        assert "query" in response.context
+
+    @pytest.mark.django_db
+    def test_empty_query_returns_no_products(self, client, product):
+        """Search with empty/missing q returns no products."""
+        response = client.get(reverse("products:search"))
+        assert response.status_code == 200
+        assert response.context["products"].count() == 0
+
+    @pytest.mark.django_db
+    def test_matching_query_returns_products(self, client, product):
+        """Products matching the query appear in results."""
+        response = client.get(reverse("products:search"), {"q": product.name[:4]})
+        assert product in response.context["products"]
+
+
+# ---------------------------------------------------------------------------
+# T019 – US4: AJAX partial filter tests
+# ---------------------------------------------------------------------------
+
+
+class TestAJAXFilters:
+    """T019 – US4: format=partial returns fragment template."""
+
+    @pytest.mark.django_db
+    def test_format_partial_returns_fragment(self, client, product):
+        """Requesting format=partial returns 200 using the partial template."""
+        response = client.get(reverse("products:product_list"), {"format": "partial"})
+        assert response.status_code == 200
+        # The response should NOT contain full HTML document structure
+        content = response.content.decode()
+        assert "<html" not in content
+
+    @pytest.mark.django_db
+    def test_full_request_returns_full_template(self, client, product):
+        """A normal (non-partial) request renders the full template."""
+        response = client.get(reverse("products:product_list"))
+        assert response.status_code == 200
+        content = response.content.decode()
+        # Full template has the base HTML skeleton
+        assert "<html" in content or "<!DOCTYPE" in content
+
+    @pytest.mark.django_db
+    def test_partial_with_filters_narrows_results(self, client, db):
+        """format=partial combined with max_price filter narrows results."""
+        from decimal import Decimal
+
+        from tests.factories import CategoryFactory, ProductFactory
+
+        cat = CategoryFactory()
+        cheap = ProductFactory(category=cat, price=Decimal("5.00"))
+        expensive = ProductFactory(category=cat, price=Decimal("200.00"))
+        response = client.get(
+            reverse("products:product_list"),
+            {"format": "partial", "max_price": "10.00"},
+        )
+        assert response.status_code == 200
+        products = list(response.context["products"])
+        assert cheap in products
+        assert expensive not in products
+
+
+# ---------------------------------------------------------------------------
+# T024 – US5: Review submission tests
+# ---------------------------------------------------------------------------
+
+
+class TestReviewSubmission:
+    """T024 – US5: Review form submission."""
+
+    @pytest.mark.django_db
+    def test_authenticated_post_creates_review(self, client, db):
+        """An authenticated POST to the review URL creates a pending review."""
+        from products.models import ProductReview
+        from tests.factories import ProductFactory, UserFactory
+
+        user = UserFactory()
+        product = ProductFactory()
+        client.force_login(user)
+        response = client.post(
+            reverse("products:submit_review", args=[product.slug]),
+            {"rating": 4, "title": "Great!", "body": "Loved it."},
+        )
+        assert response.status_code == 302
+        assert ProductReview.objects.filter(product=product, user=user).exists()
+
+    @pytest.mark.django_db
+    def test_review_approved_false_by_default(self, client, db):
+        """A newly submitted review has is_approved=False."""
+        from products.models import ProductReview
+        from tests.factories import ProductFactory, UserFactory
+
+        user = UserFactory()
+        product = ProductFactory()
+        client.force_login(user)
+        client.post(
+            reverse("products:submit_review", args=[product.slug]),
+            {"rating": 5, "title": "", "body": "Nice"},
+        )
+        review = ProductReview.objects.get(product=product, user=user)
+        assert review.is_approved is False
+
+    @pytest.mark.django_db
+    def test_duplicate_post_redirects_without_creating_second(self, client, db):
+        """Submitting a second review redirects with exists flag (no duplicate)."""
+        from tests.factories import ProductFactory, ProductReviewFactory, UserFactory
+
+        user = UserFactory()
+        product = ProductFactory()
+        ProductReviewFactory(product=product, user=user)
+        client.force_login(user)
+        response = client.post(
+            reverse("products:submit_review", args=[product.slug]),
+            {"rating": 3, "title": "", "body": "Again"},
+            follow=False,
+        )
+        assert response.status_code == 302
+        assert "review=exists" in response.url
+
+    @pytest.mark.django_db
+    def test_unauthenticated_post_redirects_to_login(self, client, db):
+        """Unauthenticated users are redirected to login."""
+        from tests.factories import ProductFactory
+
+        product = ProductFactory()
+        response = client.post(
+            reverse("products:submit_review", args=[product.slug]),
+            {"rating": 5},
+        )
+        assert response.status_code == 302
+        assert "/login/" in response.url or "/accounts/login/" in response.url
+
+    @pytest.mark.django_db
+    def test_review_submitted_param_in_redirect_url(self, client, db):
+        """After a successful review submission, redirect URL has ?review=submitted."""
+        from tests.factories import ProductFactory, UserFactory
+
+        user = UserFactory()
+        product = ProductFactory()
+        client.force_login(user)
+        response = client.post(
+            reverse("products:submit_review", args=[product.slug]),
+            {"rating": 5, "title": "Great", "body": "Really good"},
+            follow=False,
+        )
+        assert response.status_code == 302
+        assert "review=submitted" in response.url
+
+    @pytest.mark.django_db
+    def test_invalid_rating_rerenders_detail_with_errors(self, client, db):
+        """Invalid rating POSTs re-render the product detail page with form errors."""
+        from tests.factories import ProductFactory, UserFactory
+
+        user = UserFactory()
+        product = ProductFactory()
+        client.force_login(user)
+        response = client.post(
+            reverse("products:submit_review", args=[product.slug]),
+            {"rating": 0, "body": "Bad rating"},
+        )
+        assert response.status_code == 200
+        form = response.context["review_form"]
+        assert form.errors
+        assert "rating" in form.errors
+
+
+# ---------------------------------------------------------------------------
+# T026 – US6: Admin management tests
+# ---------------------------------------------------------------------------
+
+
+class TestAdminManagement:
+    """T026 – US6: ProductAdmin and ProductReviewAdmin."""
+
+    @pytest.mark.django_db
+    def test_bulk_approve_sets_is_approved_true(self, admin_user, db):
+        """bulk_approve action marks selected reviews as approved."""
+        from unittest.mock import MagicMock
+
+        from django.contrib.admin.sites import AdminSite
+
+        from products.admin import ProductReviewAdmin
+        from products.models import ProductReview
+        from tests.factories import ProductReviewFactory
+
+        review1 = ProductReviewFactory(is_approved=False)
+        review2 = ProductReviewFactory(is_approved=False)
+        site = AdminSite()
+        ma = ProductReviewAdmin(ProductReview, site)
+        request = MagicMock()
+        queryset = ProductReview.objects.filter(pk__in=[review1.pk, review2.pk])
+        ma.bulk_approve(request, queryset)
+        review1.refresh_from_db()
+        review2.refresh_from_db()
+        assert review1.is_approved is True
+        assert review2.is_approved is True
+
+    @pytest.mark.django_db
+    def test_stock_status_in_product_admin_list_display(self, admin_user, client):
+        """ProductAdmin list_display includes stock_status."""
+        from django.contrib.admin.sites import AdminSite
+
+        from products.admin import ProductAdmin
+        from products.models import Product
+
+        site = AdminSite()
+        ma = ProductAdmin(Product, site)
+        assert "stock_status" in ma.list_display
+
+    @pytest.mark.django_db
+    def test_product_admin_changelist_accessible(self, admin_user, client):
+        """Admin staff can access the product changelist page."""
+        client.force_login(admin_user)
+        response = client.get("/admin/products/product/")
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_product_review_admin_changelist_accessible(self, admin_user, client):
+        """Admin staff can access the product review changelist page."""
+        client.force_login(admin_user)
+        response = client.get("/admin/products/productreview/")
+        assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# T030 – US7: Recently viewed tests
+# ---------------------------------------------------------------------------
+
+
+class TestRecentlyViewed:
+    """T030 – US7: Session-based recently-viewed tracking."""
+
+    @pytest.mark.django_db
+    def test_viewing_product_adds_pk_to_session(self, client, product):
+        """Visiting a product detail page adds its PK to the session."""
+        client.get(reverse("products:product_detail", args=[product.slug]))
+        assert product.pk in client.session.get("recently_viewed", [])
+
+    @pytest.mark.django_db
+    def test_second_view_deduplicates_pk(self, client, product):
+        """Visiting the same product twice results in only one entry in the session."""
+        client.get(reverse("products:product_detail", args=[product.slug]))
+        client.get(reverse("products:product_detail", args=[product.slug]))
+        rv = client.session.get("recently_viewed", [])
+        assert rv.count(product.pk) == 1
+
+    @pytest.mark.django_db
+    def test_recently_viewed_capped_at_eight(self, client, db):
+        """The recently-viewed list is capped at 8 entries."""
+        from tests.factories import CategoryFactory, ProductFactory
+
+        cat = CategoryFactory()
+        products = [ProductFactory(category=cat) for _ in range(10)]
+        for p in products:
+            client.get(reverse("products:product_detail", args=[p.slug]))
+        rv = client.session.get("recently_viewed", [])
+        assert len(rv) <= 8
+
+    @pytest.mark.django_db
+    def test_recently_viewed_context_excludes_current_product(self, client, db):
+        """Detail page context excludes the current product from recently_viewed."""
+        from tests.factories import CategoryFactory, ProductFactory
+
+        cat = CategoryFactory()
+        p1 = ProductFactory(category=cat)
+        p2 = ProductFactory(category=cat)
+        # Visit p1 first so it's in session
+        client.get(reverse("products:product_detail", args=[p1.slug]))
+        # Now visit p2 — p1 should appear in recently_viewed context; p2 should not
+        response = client.get(reverse("products:product_detail", args=[p2.slug]))
+        rv_context = response.context.get("recently_viewed", [])
+        rv_pks = [p.pk for p in rv_context]
+        assert p2.pk not in rv_pks
+
+    @pytest.mark.django_db
+    def test_recently_viewed_on_product_list(self, client, product):
+        """Product list includes recently_viewed in context after a detail visit."""
+        client.get(reverse("products:product_detail", args=[product.slug]))
+        response = client.get(reverse("products:product_list"))
+        assert "recently_viewed" in response.context
+
+
+# ---------------------------------------------------------------------------
+# T036 – US8: Product comparison tests
+# ---------------------------------------------------------------------------
+
+
+class TestProductComparison:
+    """T036 – US8: Session-based product comparison."""
+
+    @pytest.mark.django_db
+    def test_add_product_stores_pk_in_session(self, client, product):
+        """POSTing to compare/add stores the product PK in the session."""
+        client.post(
+            reverse("products:compare_add"),
+            {"product_id": product.pk, "next": "/"},
+        )
+        comparison = client.session.get("comparison", {})
+        assert product.pk in comparison.get("pks", [])
+
+    @pytest.mark.django_db
+    def test_adding_fourth_product_returns_limit_error(self, client, db):
+        """Adding a 4th product redirects with compare_error=limit."""
+        from tests.factories import CategoryFactory, ProductFactory
+
+        cat = CategoryFactory()
+        products = [ProductFactory(category=cat) for _ in range(4)]
+        for p in products[:3]:
+            client.post(
+                reverse("products:compare_add"),
+                {"product_id": p.pk, "next": "/"},
+            )
+        response = client.post(
+            reverse("products:compare_add"),
+            {"product_id": products[3].pk, "next": "/"},
+        )
+        assert response.status_code == 302
+        assert "compare_error=limit" in response.url
+
+    @pytest.mark.django_db
+    def test_different_category_returns_category_error(self, client, db):
+        """Adding a different-category product redirects with compare_error=category."""
+        from tests.factories import CategoryFactory, ProductFactory
+
+        cat1 = CategoryFactory()
+        cat2 = CategoryFactory()
+        p1 = ProductFactory(category=cat1)
+        p2 = ProductFactory(category=cat2)
+        client.post(
+            reverse("products:compare_add"),
+            {"product_id": p1.pk, "next": "/"},
+        )
+        response = client.post(
+            reverse("products:compare_add"),
+            {"product_id": p2.pk, "next": "/"},
+        )
+        assert response.status_code == 302
+        assert "compare_error=category" in response.url
+
+    @pytest.mark.django_db
+    def test_remove_clears_pk_from_session(self, client, product):
+        """POSTing to compare/remove removes the product PK from session."""
+        client.post(
+            reverse("products:compare_add"),
+            {"product_id": product.pk, "next": "/"},
+        )
+        client.post(
+            reverse("products:compare_remove"),
+            {"product_id": product.pk, "next": "/"},
+        )
+        pks = client.session.get("comparison", {}).get("pks", [])
+        assert product.pk not in pks
+
+    @pytest.mark.django_db
+    def test_compare_view_renders_table(self, client, db):
+        """ComparisonView renders 200 when comparison products are in session."""
+        from tests.factories import CategoryFactory, ProductFactory
+
+        cat = CategoryFactory()
+        p1 = ProductFactory(category=cat)
+        p2 = ProductFactory(category=cat)
+        client.post(
+            reverse("products:compare_add"),
+            {"product_id": p1.pk, "next": "/"},
+        )
+        client.post(
+            reverse("products:compare_add"),
+            {"product_id": p2.pk, "next": "/"},
+        )
+        response = client.get(reverse("products:compare"))
+        assert response.status_code == 200
+        compared = list(response.context["compared_products"])
+        assert p1 in compared
+        assert p2 in compared
+
+    @pytest.mark.django_db
+    def test_empty_comparison_renders_empty_state(self, client, db):
+        """ComparisonView renders 200 with an empty list when no products selected."""
+        response = client.get(reverse("products:compare"))
+        assert response.status_code == 200
+        assert list(response.context["compared_products"]) == []
+
+    @pytest.mark.django_db
+    def test_invalid_product_id_redirects(self, client, db):
+        """ComparisonAddView handles an invalid product_id (redirects with error)."""
+        response = client.post(
+            reverse("products:compare_add"),
+            {"product_id": "not-a-number", "next": "/"},
+        )
+        assert response.status_code == 302
+        assert "compare_error=invalid" in response.url
+
+    @pytest.mark.django_db
+    def test_adding_same_product_twice_is_noop(self, client, product):
+        """Adding the same product twice does not duplicate PKs in session."""
+        for _ in range(2):
+            client.post(
+                reverse("products:compare_add"),
+                {"product_id": product.pk, "next": "/"},
+            )
+        pks = client.session.get("comparison", {}).get("pks", [])
+        assert pks.count(product.pk) == 1

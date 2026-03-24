@@ -84,7 +84,9 @@ class AddToCartView(View):
         # (CWE-601). url_has_allowed_host_and_scheme is Django's canonical helper.
         referer = request.META.get("HTTP_REFERER", "")
         if referer and url_has_allowed_host_and_scheme(
-            referer, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+            referer,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
         ):
             return redirect(referer)
         return redirect("products:product_list")

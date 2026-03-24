@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Search: "{{ query }}" - ShopHub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <!-- Search Header -->
+  <div class="row align-items-center mb-4">
+    <div class="col">
+      {% if query %}
+      <h1>
+        <span class="text-muted fw-light">Results for</span>
+        <strong>"{{ query }}"</strong>
+      </h1>
+      <p class="text-muted">
+        {% if products %}
+          {{ paginator.count }} result{{ paginator.count|pluralize }} found
+        {% else %}
+          No results found
+        {% endif %}
+      </p>
+      {% else %}
+      <h1>Search Products</h1>
+      {% endif %}
+    </div>
+    {% if products %}
+    <div class="col-auto">
+      <!-- Sort Dropdown -->
+      <form method="get" class="d-inline">
+        <input type="hidden" name="q" value="{{ query }}">
+        <select class="form-select" name="sort" onchange="this.form.submit()">
+          <option value="-created_at" {% if request.GET.sort == "-created_at" or not request.GET.sort %}selected{% endif %}>Newest First</option>
+          <option value="name" {% if request.GET.sort == "name" %}selected{% endif %}>Name A-Z</option>
+          <option value="price" {% if request.GET.sort == "price" %}selected{% endif %}>Price Low to High</option>
+          <option value="-price" {% if request.GET.sort == "-price" %}selected{% endif %}>Price High to Low</option>
+        </select>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Results -->
+  {% if products %}
+  <div class="row g-4" id="product-grid">
+    {% for product in products %}
+    <div class="col-lg-3 col-md-4 col-sm-6">
+      {% include "products/_product_card.html" with product=product %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if products.has_other_pages %}
+  <nav aria-label="Search results pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+      {% if products.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?q={{ query|urlencode }}{% if request.GET.sort %}&sort={{ request.GET.sort|urlencode }}{% endif %}&page={{ products.previous_page_number }}">
+          <i class="fas fa-angle-left"></i>
+        </a>
+      </li>
+      {% endif %}
+      {% for num in products.paginator.page_range %}
+        {% if products.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > products.number|add:"-3" and num < products.number|add:"3" %}
+        <li class="page-item">
+          <a class="page-link" href="?q={{ query|urlencode }}{% if request.GET.sort %}&sort={{ request.GET.sort|urlencode }}{% endif %}&page={{ num }}">{{ num }}</a>
+        </li>
+        {% endif %}
+      {% endfor %}
+      {% if products.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?q={{ query|urlencode }}{% if request.GET.sort %}&sort={{ request.GET.sort|urlencode }}{% endif %}&page={{ products.next_page_number }}">
+          <i class="fas fa-angle-right"></i>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% elif query %}
+  <!-- Empty State -->
+  <div class="text-center py-5">
+    <i class="fas fa-search text-muted mb-3" style="font-size:4rem;"></i>
+    <h3>No results for "{{ query }}"</h3>
+    <p class="text-muted">Try different keywords, a broader search term, or browse by category.</p>
+    <a href="{% url 'products:product_list' %}" class="btn btn-primary mt-2">
+      <i class="fas fa-th me-1"></i> Browse All Products
+    </a>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="fas fa-search text-muted mb-3" style="font-size:4rem;"></i>
+    <h3>Enter a search term to find products</h3>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
