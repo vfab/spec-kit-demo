@@ -43,7 +43,9 @@ class TestCheckout:
         # Step 2: Navigate to product and add to cart
         page.goto(live_server.url + f"/products/{product.slug}/")
         page.wait_for_load_state("networkidle")
-        page.locator("form button[type='submit'], form input[type='submit']").first.click()
+        page.locator(
+            "form button[type='submit'], form input[type='submit']"
+        ).first.click()
         page.wait_for_load_state("networkidle")
 
         # Step 3: Navigate to checkout
@@ -55,7 +57,9 @@ class TestCheckout:
             # Try adding to cart again
             page.goto(live_server.url + f"/products/{product.slug}/")
             page.wait_for_load_state("networkidle")
-            page.locator("form button[type='submit'], form input[type='submit']").first.click()
+            page.locator(
+                "form button[type='submit'], form input[type='submit']"
+            ).first.click()
             page.wait_for_load_state("networkidle")
             page.goto(live_server.url + "/orders/checkout/")
             page.wait_for_load_state("networkidle")

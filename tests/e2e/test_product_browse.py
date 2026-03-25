@@ -54,7 +54,5 @@ class TestProductBrowse:
         expect(heading).to_be_visible()
 
         # Add to cart button or form should be present
-        add_to_cart = page.locator(
-            "button[type='submit'], input[type='submit']"
-        ).first
+        add_to_cart = page.locator("button[type='submit'], input[type='submit']").first
         expect(add_to_cart).to_be_visible()

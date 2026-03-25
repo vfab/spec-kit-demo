@@ -22,9 +22,9 @@ class TestMobileResponsive:
         mobile_page.wait_for_load_state("networkidle")
 
         scroll_width = mobile_page.evaluate("document.body.scrollWidth")
-        assert scroll_width <= 375, (
-            f"Horizontal scroll detected: body.scrollWidth={scroll_width}px > 375px"
-        )
+        assert (
+            scroll_width <= 375
+        ), f"Horizontal scroll detected: body.scrollWidth={scroll_width}px > 375px"
 
     def test_product_list_accessible_mobile(self, mobile_page, live_server, db):
         """
@@ -69,6 +69,6 @@ class TestMobileResponsive:
 
         # No horizontal scroll
         scroll_width = mobile_page.evaluate("document.body.scrollWidth")
-        assert scroll_width <= 375, (
-            f"Cart page has horizontal scroll: scrollWidth={scroll_width}px > 375px"
-        )
+        assert (
+            scroll_width <= 375
+        ), f"Cart page has horizontal scroll: scrollWidth={scroll_width}px > 375px"

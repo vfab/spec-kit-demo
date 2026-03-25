@@ -38,9 +38,10 @@ class TestAuth:
 
         # After successful registration, user should be redirected
         # Verify user is logged in (username visible in nav) or on home page
-        assert page.url != live_server.url + "/accounts/register/" or page.locator(
-            "text=e2etestuser, text=E2E"
-        ).first.is_visible()
+        assert (
+            page.url != live_server.url + "/accounts/register/"
+            or page.locator("text=e2etestuser, text=E2E").first.is_visible()
+        )
 
     def test_user_login(self, page, live_server, db):
         """
@@ -62,9 +63,10 @@ class TestAuth:
         page.wait_for_load_state("networkidle")
 
         # Should be redirected away from login page after success
-        assert "/login/" not in page.url or page.locator(
-            "text=e2eloginuser, .dropdown-toggle"
-        ).first.is_visible()
+        assert (
+            "/login/" not in page.url
+            or page.locator("text=e2eloginuser, .dropdown-toggle").first.is_visible()
+        )
 
     def test_user_logout(self, page, live_server, db):
         """Login first, then click logout, assert login link reappears in nav."""

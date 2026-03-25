@@ -44,9 +44,7 @@ class TestHealthCheck:
         """Message field contains only the first line; no hostname leakage."""
         with patch(
             "django.db.connection.ensure_connection",
-            side_effect=OperationalError(
-                "line1\nline2\nhostname=secret"
-            ),
+            side_effect=OperationalError("line1\nline2\nhostname=secret"),
         ):
             response = self.client.get("/health/")
         assert response.status_code == 503

@@ -28,7 +28,9 @@ _ALLOWED_HOSTS_ENV = os.environ.get("LOCUST_ALLOWED_HOSTS", "")
 
 if _ALLOWED_HOSTS_ENV:
     # Build regex from comma-separated allowlist entries (exact hostname match)
-    _allowed_parts = [re.escape(h.strip()) for h in _ALLOWED_HOSTS_ENV.split(",") if h.strip()]
+    _allowed_parts = [
+        re.escape(h.strip()) for h in _ALLOWED_HOSTS_ENV.split(",") if h.strip()
+    ]
     _ALLOWED_PATTERN = r"(" + "|".join(_allowed_parts) + r")"
 else:
     _ALLOWED_PATTERN = _DEFAULT_ALLOWED_PATTERNS
@@ -68,6 +70,7 @@ _PRODUCT_SLUGS = os.environ.get(
 # User classes
 # ---------------------------------------------------------------------------
 
+
 class HomepageUser(HttpUser):
     """Simulates a user who repeatedly visits the homepage."""
 
@@ -90,6 +93,7 @@ class ProductBrowseUser(HttpUser):
     @task(2)
     def visit_product_detail(self):
         import random
+
         slug = random.choice(_PRODUCT_SLUGS).strip()
         self.client.get(f"/products/{slug}/", name="GET /products/<slug>/")
 

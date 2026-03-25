@@ -448,12 +448,12 @@ class TestSecurityHeaders:
     def test_security_headers_present(self, client):
         """Home page response carries required security headers."""
         response = client.get("/")
-        assert "X-Content-Type-Options" in response, (
-            "X-Content-Type-Options header missing from home page response"
-        )
-        assert "X-Frame-Options" in response, (
-            "X-Frame-Options header missing from home page response"
-        )
+        assert (
+            "X-Content-Type-Options" in response
+        ), "X-Content-Type-Options header missing from home page response"
+        assert (
+            "X-Frame-Options" in response
+        ), "X-Frame-Options header missing from home page response"
 
     def test_csrf_required_on_add_to_cart(self, client):
         """POST to add-to-cart without CSRF token returns 403."""
@@ -462,19 +462,19 @@ class TestSecurityHeaders:
         # Use enforce_csrf_checks=True to bypass the test-client's CSRF bypass
         csrf_client = DjangoClient(enforce_csrf_checks=True)
         response = csrf_client.post("/orders/cart/add/1/", data={"quantity": 1})
-        assert response.status_code == 403, (
-            f"Expected 403 (CSRF failure) but got {response.status_code}"
-        )
+        assert (
+            response.status_code == 403
+        ), f"Expected 403 (CSRF failure) but got {response.status_code}"
 
     def test_checkout_requires_authentication(self, client):
         """Unauthenticated GET to checkout redirects to login."""
         response = client.get("/orders/checkout/")
-        assert response.status_code == 302, (
-            f"Expected redirect (302) but got {response.status_code}"
-        )
-        assert "/login/" in response["Location"], (
-            "Checkout redirect target does not point to login page"
-        )
+        assert (
+            response.status_code == 302
+        ), f"Expected redirect (302) but got {response.status_code}"
+        assert (
+            "/login/" in response["Location"]
+        ), "Checkout redirect target does not point to login page"
 
     def test_no_stack_trace_in_500_response(self):
         """With DEBUG=False a 500 response body must not contain a traceback."""
@@ -507,7 +507,9 @@ class TestMockIntegrations:
         """settings_test.py uses the in-memory email backend — no real SMTP."""
         from django.core import mail
 
-        assert settings.EMAIL_BACKEND == "django.core.mail.backends.locmem.EmailBackend", (
+        assert (
+            settings.EMAIL_BACKEND == "django.core.mail.backends.locmem.EmailBackend"
+        ), (
             "EMAIL_BACKEND must be django.core.mail.backends.locmem.EmailBackend "
             "in the test settings (no real SMTP calls during tests)"
         )
@@ -555,6 +557,4 @@ class TestMockIntegrations:
         assert dest.exists(), "Uploaded file was not written to tmp_path"
         assert not (
             __import__("pathlib").Path("media") / "products" / "test.png"
-        ).exists(), (
-            "File was unexpectedly written to the production media/ directory"
-        )
+        ).exists(), "File was unexpectedly written to the production media/ directory"

@@ -30,7 +30,9 @@ class TestCart:
         self._navigate_to_product(page, live_server, product)
 
         # Submit the add-to-cart form
-        page.locator("form button[type='submit'], form input[type='submit']").first.click()
+        page.locator(
+            "form button[type='submit'], form input[type='submit']"
+        ).first.click()
         page.wait_for_load_state("networkidle")
 
         # After adding, cart badge should show a non-zero count or cart link visible
@@ -49,7 +51,9 @@ class TestCart:
 
         # Add to cart via direct navigation to add URL (POST)
         self._navigate_to_product(page, live_server, product)
-        page.locator("form button[type='submit'], form input[type='submit']").first.click()
+        page.locator(
+            "form button[type='submit'], form input[type='submit']"
+        ).first.click()
         page.wait_for_load_state("networkidle")
 
         # Navigate to cart page
@@ -69,7 +73,9 @@ class TestCart:
 
         # Add item to cart
         self._navigate_to_product(page, live_server, product)
-        page.locator("form button[type='submit'], form input[type='submit']").first.click()
+        page.locator(
+            "form button[type='submit'], form input[type='submit']"
+        ).first.click()
         page.wait_for_load_state("networkidle")
 
         # Go to cart

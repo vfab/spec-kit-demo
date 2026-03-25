@@ -118,9 +118,7 @@ class ProductListView(ListView):
 
     def get_queryset(self):
         return self._base_queryset().annotate(
-            approved_review_count=Count(
-                "reviews", filter=Q(reviews__is_approved=True)
-            )
+            approved_review_count=Count("reviews", filter=Q(reviews__is_approved=True))
         )
 
     def get_context_data(self, **kwargs):
@@ -184,12 +182,8 @@ class ProductDetailView(DetailView):
             .select_related("category")
             .prefetch_related("images", "variants")
             .annotate(
-                review_count=Count(
-                    "reviews", filter=Q(reviews__is_approved=True)
-                ),
-                avg_rating=Avg(
-                    "reviews__rating", filter=Q(reviews__is_approved=True)
-                ),
+                review_count=Count("reviews", filter=Q(reviews__is_approved=True)),
+                avg_rating=Avg("reviews__rating", filter=Q(reviews__is_approved=True)),
             )
         )
 
@@ -487,7 +481,9 @@ class ComparisonAddView(View):
 
         product = get_object_or_404(Product, pk=product_id, is_active=True)
 
-        comparison = request.session.get("comparison", {"pks": [], "category_id": None, "items": []})
+        comparison = request.session.get(
+            "comparison", {"pks": [], "category_id": None, "items": []}
+        )
         pks = comparison.get("pks", [])
         category_id = comparison.get("category_id")
         items = comparison.get("items", [])
@@ -531,7 +527,11 @@ class ComparisonRemoveView(View):
 
         # "clear" sentinel: wipe the entire comparison list at once.
         if product_id_raw == "clear":
-            request.session["comparison"] = {"pks": [], "category_id": None, "items": []}
+            request.session["comparison"] = {
+                "pks": [],
+                "category_id": None,
+                "items": [],
+            }
             request.session.modified = True
             return redirect(referrer)
 
@@ -540,9 +540,13 @@ class ComparisonRemoveView(View):
         except (ValueError, TypeError):
             return redirect(referrer)
 
-        comparison = request.session.get("comparison", {"pks": [], "category_id": None, "items": []})
+        comparison = request.session.get(
+            "comparison", {"pks": [], "category_id": None, "items": []}
+        )
         pks = [p for p in comparison.get("pks", []) if p != product_id]
-        items = [item for item in comparison.get("items", []) if item["pk"] != product_id]
+        items = [
+            item for item in comparison.get("items", []) if item["pk"] != product_id
+        ]
         request.session["comparison"] = {
             "pks": pks,
             "category_id": comparison.get("category_id") if pks else None,
