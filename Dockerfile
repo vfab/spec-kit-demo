@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq5 \
         libjpeg62-turbo \
         zlib1g \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder
@@ -57,6 +58,9 @@ RUN mkdir -p /app/media && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health/ || exit 1
 
 # Gunicorn: 2 workers per CPU core (adjust via GUNICORN_WORKERS env var)
 CMD ["sh", "-c", "gunicorn ecommerce_site.wsgi:application \

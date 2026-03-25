@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check formatting (black)
+        run: black --check .
+
+      - name: Check import ordering (isort)
+        run: isort --check-only .
+
+      - name: Lint (flake8)
+        run: flake8 .
+
+      - name: Type-check (mypy)
+        run: mypy accounts orders products ecommerce_site core
+
+  security:
+    name: Security Scan
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Bandit (MEDIUM and above — -ll flag)
+        # -ll surfaces MEDIUM and HIGH severity; any finding fails the build
+        run: |
+          bandit -r accounts core orders products ecommerce_site \
+            -ll -f json -o bandit-report.json
+        continue-on-error: false
+
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 7
+
+      - name: Run pip-audit (HIGH/CRITICAL CVEs fail the build)
+        run: pip-audit -r requirements.txt
+
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    needs: security
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: shophub_test
+          POSTGRES_USER: shophub
+          POSTGRES_PASSWORD: shophub_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests with coverage
+        env:
+          DJANGO_SETTINGS_MODULE: ecommerce_site.settings_test
+          SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
+          DATABASE_URL: ${{ secrets.CI_DATABASE_URL }}
+        run: |
+          pytest tests/ \
+            --ignore=tests/e2e \
+            --ignore=tests/load \
+            --cov=. \
+            --cov-fail-under=95 \
+            --junit-xml=test-results.xml \
+            --cov-report=html \
+            --no-cov-on-fail
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: test-results.xml
+          retention-days: 7
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: htmlcov-${{ matrix.python-version }}
+          path: htmlcov/
+          retention-days: 7
+
+  e2e:
+    name: E2E Browser Tests
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        # pytest-django's live_server fixture manages the Django dev server
+        # automatically — do NOT start a separate manage.py runserver here
+        # as it would conflict with the live_server fixture's port.
+        env:
+          DJANGO_SETTINGS_MODULE: ecommerce_site.settings_test
+        run: |
+          pytest tests/e2e/ \
+            --junit-xml=e2e-results.xml \
+            -v \
+            --ds=ecommerce_site.settings_test
+
+      - name: Upload E2E results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            e2e-results.xml
+            tests/e2e/screenshots/
+          retention-days: 7
