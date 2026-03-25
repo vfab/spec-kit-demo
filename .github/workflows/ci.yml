@@ -166,6 +166,10 @@ jobs:
         # as it would conflict with the live_server fixture's port.
         env:
           DJANGO_SETTINGS_MODULE: ecommerce_site.settings_test
+          SECRET_KEY: ${{ secrets.CI_SECRET_KEY || 'test-secret-key-for-ci-only' }}
+          # Playwright's asyncio event loop causes Django to raise
+          # SynchronousOnlyOperation without this flag.
+          DJANGO_ALLOW_ASYNC_UNSAFE: "true"
         run: |
           pytest tests/e2e/ \
             --junit-xml=e2e-results.xml \
