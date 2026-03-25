@@ -10,9 +10,12 @@ Usage (automatic via pytest.ini):
 
 import os
 
-# Ensure SECRET_KEY is available before settings.py is imported, so tools like
-# mypy can load this module without needing it set in the environment.
-os.environ.setdefault("SECRET_KEY", "test-secret-key-for-tooling-only")  # noqa: S105
+# Ensure SECRET_KEY is non-empty before settings.py is imported.
+# os.environ.setdefault() would leave an existing empty-string value (e.g. an
+# unset GitHub Actions secret that resolves to "") unchanged, so we check
+# truthiness explicitly instead.
+if not os.environ.get("SECRET_KEY"):  # noqa: S105
+    os.environ["SECRET_KEY"] = "test-secret-key-for-tooling-only"  # noqa: S105
 
 from .settings import *  # noqa: E402, F401, F403
 
