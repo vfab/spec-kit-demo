@@ -180,103 +180,15 @@ ShopHub{% endblock %} {% block content %}
                 <label for="billing_country" class="form-label"
                   >Country *</label
                 >
-                <select
-                  class="form-select"
+                <input
+                  type="text"
+                  class="form-control"
                   id="billing_country"
                   name="billing_country"
+                  placeholder="e.g., US"
                   required
-                >
-                  <option value="">Choose country...</option>
-                  <option
-                    value="US"
-                    {%
-                    if
-                    profile.country=""
-                    ="US"
-                    or
-                    not
-                    profile
-                    %}selected{%
-                    endif
-                    %}
-                  >
-                    United States
-                  </option>
-                  <option
-                    value="CA"
-                    {%
-                    if
-                    profile.country=""
-                    ="CA"
-                    %}selected{%
-                    endif
-                    %}
-                  >
-                    Canada
-                  </option>
-                  <option
-                    value="GB"
-                    {%
-                    if
-                    profile.country=""
-                    ="GB"
-                    %}selected{%
-                    endif
-                    %}
-                  >
-                    United Kingdom
-                  </option>
-                  <option
-                    value="AU"
-                    {%
-                    if
-                    profile.country=""
-                    ="AU"
-                    %}selected{%
-                    endif
-                    %}
-                  >
-                    Australia
-                  </option>
-                  <option
-                    value="DE"
-                    {%
-                    if
-                    profile.country=""
-                    ="DE"
-                    %}selected{%
-                    endif
-                    %}
-                  >
-                    Germany
-                  </option>
-                  <option
-                    value="FR"
-                    {%
-                    if
-                    profile.country=""
-                    ="FR"
-                    %}selected{%
-                    endif
-                    %}
-                  >
-                    France
-                  </option>
-                  <option
-                    value="JP"
-                    {%
-                    if
-                    profile.country=""
-                    ="JP"
-                    %}selected{%
-                    endif
-                    %}
-                  >
-                    Japan
-                  </option>
-                  <option value="OTHER">Other</option>
-                </select>
-                <div class="invalid-feedback">Please select your country.</div>
+                />
+                <div class="invalid-feedback">Please enter your country.</div>
               </div>
             </div>
           </div>

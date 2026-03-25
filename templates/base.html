@@ -112,6 +112,15 @@
                 {% endif %}
               </a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'accounts:logout' %}"
+                 onclick="event.preventDefault();document.getElementById('logout-form').submit();">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+            </li>
+            <form id="logout-form" method="post" action="{% url 'accounts:logout' %}" style="display:none;">
+              {% csrf_token %}
+            </form>
             <li class="nav-item dropdown">
               <a
                 class="nav-link dropdown-toggle"
