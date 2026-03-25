@@ -97,7 +97,7 @@
               placeholder="Search products..."
               value="{{ request.GET.q }}"
             />
-            <button class="btn btn-outline-light" type="submit">
+            <button class="btn btn-outline-light" type="button" onclick="this.closest('form').submit()">
               <i class="fas fa-search"></i>
             </button>
           </form>
