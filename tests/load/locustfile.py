@@ -15,7 +15,6 @@ Production guard:
 
 import os
 import re
-import sys
 from urllib.parse import urlparse
 
 from locust import HttpUser, between, events, task

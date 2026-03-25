@@ -48,7 +48,7 @@ SECURE_HSTS_PRELOAD = True
 # Insert immediately after SecurityMiddleware (index 1)
 # ---------------------------------------------------------------------------
 # Build the final MIDDLEWARE list: insert whitenoise after SecurityMiddleware
-_middleware = list(MIDDLEWARE)  # type: ignore[name-defined]
+_middleware = list(MIDDLEWARE)  # type: ignore  # noqa: F405
 _security_idx = next(
     i
     for i, m in enumerate(_middleware)

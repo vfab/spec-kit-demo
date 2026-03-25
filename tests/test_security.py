@@ -508,9 +508,8 @@ class TestMockIntegrations:
         """settings_test.py uses the in-memory email backend — no real SMTP."""
         from django.core import mail
 
-        assert (
-            settings.EMAIL_BACKEND == "django.core.mail.backends.locmem.EmailBackend"
-        ), (
+        locmem_backend = "django.core.mail.backends.locmem.EmailBackend"
+        assert settings.EMAIL_BACKEND == locmem_backend, (
             "EMAIL_BACKEND must be django.core.mail.backends.locmem.EmailBackend "
             "in the test settings (no real SMTP calls during tests)"
         )
@@ -531,11 +530,7 @@ class TestMockIntegrations:
         Uses override_settings(MEDIA_ROOT=tmp_path) to isolate the test from
         the production media/ folder.
         """
-        import io
-
-        from django.contrib.auth.models import User
         from django.core.files.uploadedfile import SimpleUploadedFile
-        from django.test import override_settings
 
         settings.MEDIA_ROOT = str(tmp_path)
 
