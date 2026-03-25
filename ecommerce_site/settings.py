@@ -56,6 +56,7 @@ if DEBUG:
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "csp.middleware.CSPMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -302,6 +303,38 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = config(
 )
 SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=False, cast=bool)
 
+# Prevent browsers from MIME-sniffing a response away from the declared content-type.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+# Legacy XSS auditor header — harmless no-op in modern browsers (kept for old clients).
+SECURE_BROWSER_XSS_FILTER = True
+# Block all iframe embedding — clickjacking protection (Django 5.2 default; stated explicitly).
+X_FRAME_OPTIONS = "DENY"
+# Restrict referrer info sent on cross-origin navigation (privacy + security).
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+# Tell proxy servers the scheme Django is running behind (needed with SECURE_SSL_REDIRECT).
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# -----------------------------------------------------------------
+# Content Security Policy (EPIC-10 T5, T12)
+# CSPMiddleware adds Content-Security-Policy headers to every response,
+# restricting which resources the browser may load.
+# Templates contain inline <script> and style= attributes so 'unsafe-inline' is
+# added as an incremental first step; nonce-based inline approval is a follow-up.
+# -----------------------------------------------------------------
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net")
+CSP_STYLE_SRC = (
+    "'self'",
+    "'unsafe-inline'",
+    "https://cdn.jsdelivr.net",
+    "https://cdnjs.cloudflare.com",
+)
+CSP_FONT_SRC = ("'self'", "https://cdnjs.cloudflare.com")
+CSP_IMG_SRC = ("'self'", "data:", "blob:")
+CSP_CONNECT_SRC = ("'self'",)
+# Disallow framing from any origin (mirrors X_FRAME_OPTIONS = DENY).
+CSP_FRAME_ANCESTORS = ("'none'",)
+
 # -----------------------------------------------------------------
 # Query logging (EPIC-11 T2)
 # Logs any SQL query that takes longer than DB_SLOW_QUERY_MS ms when DEBUG=True.
@@ -354,6 +387,18 @@ LOGGING = {
         "ecommerce_site": {
             "handlers": ["console"],
             "level": "DEBUG",
+            "propagate": False,
+        },
+        # Log failed login attempts and lockout events (EPIC-10 T13).
+        "axes": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # Log Django's built-in security warnings (e.g. SuspiciousOperation).
+        "django.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
             "propagate": False,
         },
     },
