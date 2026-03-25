@@ -7,6 +7,15 @@ omit =
     manage.py
     conftest.py
     */settings.py
+    # Production/deployment entrypoints — not exercised by the unit test suite
+    ecommerce_site/wsgi.py
+    ecommerce_site/asgi.py
+    ecommerce_site/settings_production.py
+    # E2E and load tests run in separate CI jobs; excluding them from coverage
+    # measurement avoids penalising the unit-test coverage score for code that
+    # is intentionally skipped via --ignore=tests/e2e and --ignore=tests/load.
+    tests/e2e/*
+    tests/load/*
 
 [report]
 exclude_lines =
