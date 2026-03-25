@@ -307,11 +307,11 @@ SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=False, cast=bool)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 # Legacy XSS auditor header — harmless no-op in modern browsers (kept for old clients).
 SECURE_BROWSER_XSS_FILTER = True
-# Block all iframe embedding — clickjacking protection (Django 5.2 default; stated explicitly).
+# Block iframe embedding — clickjacking protection (Django 5.2 default; explicit).
 X_FRAME_OPTIONS = "DENY"
-# Restrict referrer info sent on cross-origin navigation (privacy + security).
+# Restrict referrer info on cross-origin navigation (privacy + security).
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-# Tell proxy servers the scheme Django is running behind (needed with SECURE_SSL_REDIRECT).
+# Forward upstream scheme so SECURE_SSL_REDIRECT works behind a proxy.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # -----------------------------------------------------------------
