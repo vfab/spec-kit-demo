@@ -6,7 +6,6 @@ Zero time.sleep() calls — uses expect(locator).to_be_visible() throughout.
 """
 
 import pytest
-
 from playwright.sync_api import expect
 
 

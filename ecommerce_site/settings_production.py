@@ -8,9 +8,9 @@ Inherits all base settings and overrides/adds production-only configuration:
 - Configures structured JSON logging to stdout
 """
 
-from .settings import *  # noqa: F401, F403
-
 from decouple import Csv, config
+
+from .settings import *  # noqa: F401, F403
 
 # ---------------------------------------------------------------------------
 # Core security overrides

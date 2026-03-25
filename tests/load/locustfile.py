@@ -14,11 +14,11 @@ Production guard:
 """
 
 import os
-import sys
 import re
+import sys
 from urllib.parse import urlparse
 
-from locust import HttpUser, between, task, events
+from locust import HttpUser, between, events, task
 
 # ---------------------------------------------------------------------------
 # Production guard

@@ -478,7 +478,8 @@ class TestSecurityHeaders:
 
     def test_no_stack_trace_in_500_response(self):
         """With DEBUG=False a 500 response body must not contain a traceback."""
-        from django.test import Client as DjangoClient, override_settings
+        from django.test import Client as DjangoClient
+        from django.test import override_settings
 
         with override_settings(DEBUG=False):
             c = DjangoClient(raise_request_exception=False)
