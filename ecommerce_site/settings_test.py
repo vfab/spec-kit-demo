@@ -8,7 +8,13 @@ Usage (automatic via pytest.ini):
     DJANGO_SETTINGS_MODULE = ecommerce_site.settings_test
 """
 
-from .settings import *  # noqa: F401, F403
+import os
+
+# Ensure SECRET_KEY is available before settings.py is imported, so tools like
+# mypy can load this module without needing it set in the environment.
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-tooling-only")  # noqa: S105
+
+from .settings import *  # noqa: E402, F401, F403
 
 # ---------------------------------------------------------------------------
 # Database — use in-memory SQLite so tests never touch db.sqlite3 on disk.
