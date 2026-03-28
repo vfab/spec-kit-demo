@@ -53,9 +53,7 @@ class TestMobileResponsive:
         # Add item to cart by navigating to product and submitting form
         mobile_page.goto(live_server.url + f"/products/{product.slug}/")
         mobile_page.wait_for_load_state("networkidle")
-        mobile_page.locator(
-            "form button[type='submit'], form input[type='submit']"
-        ).first.click()
+        mobile_page.locator("#addToCartBtn").click()
         mobile_page.wait_for_load_state("networkidle")
 
         # Navigate to cart
