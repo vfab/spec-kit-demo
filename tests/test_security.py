@@ -616,21 +616,26 @@ class TestDjangoSecuritySettings:
         assert settings.SECURE_REFERRER_POLICY == "strict-origin-when-cross-origin"
 
     def test_secure_proxy_ssl_header_set(self):
-        """SECURE_PROXY_SSL_HEADER is production-only and absent from base settings.
+        """SECURE_PROXY_SSL_HEADER is production-only and None in base/test settings.
 
-        The setting must not appear in base/test settings (that would cause
-        Django to trust X-Forwarded-Proto in development and CI where there is
-        no trusted reverse-proxy in front of the server).  Its presence in
-        settings_production.py is verified by a plain text search so we don't
-        need to import that module (which requires live env vars).
+        Django's global_settings defines SECURE_PROXY_SSL_HEADER = None, so the
+        attribute always exists on the settings object.  What matters is that
+        neither settings.py nor settings_test.py overrides it to a non-None
+        value — a non-None value would cause Django to trust X-Forwarded-Proto
+        in development and CI where there is no trusted reverse-proxy.
+        Its presence in settings_production.py is verified by a plain text
+        search so we don't need to import that module (which requires live env
+        vars).
         """
         import pathlib
 
         from django.conf import settings as test_settings
 
-        # 1. Must NOT be in the active (test/dev) settings.
-        assert not hasattr(test_settings, "SECURE_PROXY_SSL_HEADER"), (
-            "SECURE_PROXY_SSL_HEADER must NOT be in base/test settings — "
+        # 1. Must be None (unset) in the active (test/dev) settings.
+        # Django's global_settings always defines this attribute, so we check
+        # the value rather than attribute existence.
+        assert test_settings.SECURE_PROXY_SSL_HEADER is None, (
+            "SECURE_PROXY_SSL_HEADER must be None in base/test settings — "
             "it is only safe to trust in a known proxied production environment"
         )
 
