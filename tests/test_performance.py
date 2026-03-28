@@ -190,3 +190,183 @@ class TestModelIndexes:
         index_fields = [list(idx.fields) for idx in CartItem._meta.indexes]
         # Index on cart + -created_at (DESC prefix stored as '-created_at')
         assert any("cart" in fields for fields in index_fields)
+
+
+# ---------------------------------------------------------------------------
+# SlowQueryFilter unit tests (EPIC-11 T6)
+# ---------------------------------------------------------------------------
+
+
+class TestSlowQueryFilter:
+    """Unit tests for ecommerce_site.log_filters.SlowQueryFilter."""
+
+    def _make_record(self, duration: float):
+        import logging
+
+        record = logging.LogRecord(
+            name="django.db.backends",
+            level=logging.DEBUG,
+            pathname="",
+            lineno=0,
+            msg="SELECT 1",
+            args=(),
+            exc_info=None,
+        )
+        record.duration = duration
+        record.sql = "SELECT 1"
+        return record
+
+    def test_slow_record_passes_filter(self):
+        """A record whose duration >= threshold is kept (filter returns True)."""
+        from ecommerce_site.log_filters import SlowQueryFilter
+
+        f = SlowQueryFilter(threshold_ms=100.0)
+        record = self._make_record(duration=150.0)
+        assert f.filter(record) is True
+
+    def test_fast_record_blocked_by_filter(self):
+        """A record whose duration < threshold is dropped (filter returns False)."""
+        from ecommerce_site.log_filters import SlowQueryFilter
+
+        f = SlowQueryFilter(threshold_ms=100.0)
+        record = self._make_record(duration=50.0)
+        assert f.filter(record) is False
+
+    def test_record_at_exact_threshold_passes(self):
+        """A record exactly at the threshold is kept."""
+        from ecommerce_site.log_filters import SlowQueryFilter
+
+        f = SlowQueryFilter(threshold_ms=100.0)
+        record = self._make_record(duration=100.0)
+        assert f.filter(record) is True
+
+    def test_default_threshold_is_100_ms(self):
+        """Default threshold_ms is 100.0 when not specified."""
+        from ecommerce_site.log_filters import SlowQueryFilter
+
+        f = SlowQueryFilter()
+        assert f.threshold_ms == 100.0
+
+    def test_custom_threshold_respected(self):
+        """A custom threshold_ms value is honoured."""
+        from ecommerce_site.log_filters import SlowQueryFilter
+
+        f = SlowQueryFilter(threshold_ms=200.0)
+        assert f.filter(self._make_record(duration=150.0)) is False
+        assert f.filter(self._make_record(duration=250.0)) is True
+
+    def test_missing_duration_attribute_treated_as_zero(self):
+        """Records without a duration attribute do not raise; treated as 0ms."""
+        import logging
+
+        from ecommerce_site.log_filters import SlowQueryFilter
+
+        f = SlowQueryFilter(threshold_ms=100.0)
+        record = logging.LogRecord(
+            name="django.db.backends",
+            level=logging.DEBUG,
+            pathname="",
+            lineno=0,
+            msg="SELECT 1",
+            args=(),
+            exc_info=None,
+        )
+        # No record.duration set — getattr default is 0.0, which is < 100ms.
+        assert f.filter(record) is False
+
+
+# ---------------------------------------------------------------------------
+# RequestTimingMiddleware unit tests (EPIC-11 T5)
+# ---------------------------------------------------------------------------
+
+
+class TestRequestTimingMiddleware:
+    """Unit tests for ecommerce_site.middleware.RequestTimingMiddleware."""
+
+    def _make_middleware(self, status_code=200):
+        """Return (middleware, get_response_mock) pair."""
+        from unittest.mock import MagicMock
+
+        from django.http import HttpResponse
+
+        response = HttpResponse(status=status_code)
+        get_response = MagicMock(return_value=response)
+        from ecommerce_site.middleware import RequestTimingMiddleware
+
+        mw = RequestTimingMiddleware(get_response)
+        return mw, get_response, response
+
+    def test_middleware_returns_response(self):
+        """Middleware passes request through and returns the response."""
+        from django.test import RequestFactory
+
+        factory = RequestFactory()
+        request = factory.get("/products/")
+        mw, _, original_response = self._make_middleware()
+        result = mw(request)
+        assert result is original_response
+
+    def test_middleware_calls_get_response(self):
+        """Middleware calls get_response exactly once with the request."""
+        from django.test import RequestFactory
+
+        factory = RequestFactory()
+        request = factory.get("/")
+        mw, get_response_mock, _ = self._make_middleware()
+        mw(request)
+        get_response_mock.assert_called_once_with(request)
+
+    def test_debug_header_set_when_debug_true(self):
+        """X-Request-Duration header is attached when DEBUG=True."""
+        from django.test import RequestFactory, override_settings
+
+        factory = RequestFactory()
+        request = factory.get("/")
+        mw, _, _ = self._make_middleware()
+        with override_settings(DEBUG=True):
+            response = mw(request)
+        assert "X-Request-Duration" in response
+
+    def test_debug_header_absent_when_debug_false(self):
+        """X-Request-Duration header is NOT attached when DEBUG=False."""
+        from django.test import RequestFactory, override_settings
+
+        factory = RequestFactory()
+        request = factory.get("/")
+        mw, _, _ = self._make_middleware()
+        with override_settings(DEBUG=False):
+            response = mw(request)
+        assert "X-Request-Duration" not in response
+
+    def test_debug_header_contains_ms_suffix(self):
+        """X-Request-Duration header value ends with 'ms'."""
+        from django.test import RequestFactory, override_settings
+
+        factory = RequestFactory()
+        request = factory.get("/health/")
+        mw, _, _ = self._make_middleware()
+        with override_settings(DEBUG=True):
+            response = mw(request)
+        assert response["X-Request-Duration"].endswith("ms")
+
+    def test_middleware_logs_request(self):
+        """Middleware emits one INFO log record per request."""
+        import logging
+        from unittest.mock import patch
+
+        from django.test import RequestFactory
+
+        factory = RequestFactory()
+        request = factory.get("/products/")
+        mw, _, _ = self._make_middleware()
+        with patch.object(
+            logging.getLogger("ecommerce_site.performance"), "info"
+        ) as mock_log:
+            mw(request)
+        mock_log.assert_called_once()
+        _, kwargs = mock_log.call_args
+        extra = kwargs.get("extra", {})
+        assert extra["method"] == "GET"
+        assert extra["path"] == "/products/"
+        assert "duration_ms" in extra
+        assert isinstance(extra["duration_ms"], float)

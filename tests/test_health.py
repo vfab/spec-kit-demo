@@ -1,11 +1,13 @@
 """
-Tests for the /health/ endpoint (T-005).
+Tests for the /health/ endpoint (T-005, EPIC-11).
 
 Covers:
-- 200 response when database is healthy
+- 200 response when database and cache are healthy
 - 503 response when database raises OperationalError
+- 200 "degraded" response when only the cache is down
 - Message sanitization (no internal details leaked)
 - No authentication required (public endpoint)
+- Cache status field always present in response
 """
 
 from unittest.mock import patch
@@ -22,11 +24,14 @@ class TestHealthCheck:
         self.client = Client()
 
     def test_health_check_healthy(self):
-        """GET /health/ returns 200 with status ok when DB is reachable."""
+        """GET /health/ returns 200 with status ok when DB and cache are up."""
         with patch("django.db.connection.ensure_connection"):
             response = self.client.get("/health/")
         assert response.status_code == 200
-        assert response.json() == {"status": "ok", "database": "ok"}
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["database"] == "ok"
+        assert data["cache"] == "ok"
 
     def test_health_check_db_error(self):
         """GET /health/ returns 503 when DB raises OperationalError."""
@@ -63,3 +68,33 @@ class TestHealthCheck:
         # Must not redirect to login
         assert response.status_code != 302
         assert response.status_code == 200
+
+    def test_health_check_includes_cache_field(self):
+        """Response always contains a 'cache' field."""
+        with patch("django.db.connection.ensure_connection"):
+            response = self.client.get("/health/")
+        assert "cache" in response.json()
+
+    def test_health_check_degraded_when_cache_set_fails(self):
+        """GET /health/ returns 200 degraded when cache.set raises."""
+        with patch("django.db.connection.ensure_connection"):
+            with patch(
+                "django.core.cache.cache.set",
+                side_effect=Exception("Redis unavailable"),
+            ):
+                response = self.client.get("/health/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["database"] == "ok"
+        assert data["cache"] == "error"
+        assert data["status"] == "degraded"
+
+    def test_health_check_degraded_when_cache_get_mismatch(self):
+        """GET /health/ returns degraded when cache round-trip fails silently."""
+        with patch("django.db.connection.ensure_connection"):
+            with patch("django.core.cache.cache.get", return_value=None):
+                response = self.client.get("/health/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["cache"] == "error"
+        assert data["status"] == "degraded"
