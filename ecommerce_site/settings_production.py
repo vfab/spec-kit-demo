@@ -42,6 +42,9 @@ CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+# Trust the upstream proxy's X-Forwarded-Proto header to detect HTTPS.
+# Only set in production where traffic flows through a known proxy.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ---------------------------------------------------------------------------
 # WhiteNoise — static file serving without a CDN

@@ -68,7 +68,7 @@ MIDDLEWARE = [
 if DEBUG:
     MIDDLEWARE.insert(1, "debug_toolbar.middleware.DebugToolbarMiddleware")
 
-# axes middleware must come after AxesMiddleware — append after session/auth middleware
+# AxesMiddleware must come after SessionMiddleware and AuthenticationMiddleware.
 MIDDLEWARE.append("axes.middleware.AxesMiddleware")
 
 # IPs that can see the Debug Toolbar panel
@@ -311,8 +311,6 @@ SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = "DENY"
 # Restrict referrer info on cross-origin navigation (privacy + security).
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-# Forward upstream scheme so SECURE_SSL_REDIRECT works behind a proxy.
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # -----------------------------------------------------------------
 # Content Security Policy (EPIC-10 T5, T12)
