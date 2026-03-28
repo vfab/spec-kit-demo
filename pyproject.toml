@@ -17,3 +17,12 @@ known_django = ["django"]
 known_first_party = ["accounts", "orders", "products", "ecommerce_site"]
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "DJANGO", "FIRSTPARTY", "LOCALFOLDER"]
 skip_glob = ["*/migrations/*", ".venv/*"]
+
+[tool.coverage.run]
+omit = [
+    "tests/e2e/*",
+    "tests/load/*",
+    "*/migrations/*",
+    "ecommerce_site/wsgi.py",
+    "ecommerce_site/asgi.py",
+]

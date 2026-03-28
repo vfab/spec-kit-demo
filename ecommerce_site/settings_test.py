@@ -8,7 +8,16 @@ Usage (automatic via pytest.ini):
     DJANGO_SETTINGS_MODULE = ecommerce_site.settings_test
 """
 
-from .settings import *  # noqa: F401, F403
+import os
+
+# Ensure SECRET_KEY is non-empty before settings.py is imported.
+# os.environ.setdefault() would leave an existing empty-string value (e.g. an
+# unset GitHub Actions secret that resolves to "") unchanged, so we check
+# truthiness explicitly instead.
+if not os.environ.get("SECRET_KEY"):  # noqa: S105
+    os.environ["SECRET_KEY"] = "test-secret-key-for-tooling-only"  # noqa: S105
+
+from .settings import *  # noqa: E402, F401, F403
 
 # ---------------------------------------------------------------------------
 # Database — use in-memory SQLite so tests never touch db.sqlite3 on disk.

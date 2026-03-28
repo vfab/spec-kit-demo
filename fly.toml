@@ -1,0 +1,50 @@
+# fly.toml — Fly.io application configuration for ShopHub
+# Staging application. Production uses the same file but is deployed with:
+#   flyctl deploy --remote-only --app shophub
+#
+# Secrets (SECRET_KEY, DATABASE_URL) are managed via:
+#   flyctl secrets set SECRET_KEY=... --app shophub-staging
+# They are NEVER committed to this file.
+
+app = "shophub-staging"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  release_command = "python manage.py migrate --noinput"
+  strategy = "rolling"
+
+[env]
+  DJANGO_SETTINGS_MODULE = "ecommerce_site.settings_production"
+  PORT = "8000"
+
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+    force_https = true
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.http_checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health/"
+
+  [[services.tcp_checks]]
+    grace_period = "10s"
+    interval = "15s"
+    restart_limit = 0
+    timeout = "2s"

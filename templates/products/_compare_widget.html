@@ -1,5 +1,7 @@
-{# Floating comparison widget — include in base.html or listing templates.
-   Reads comparison state from session via request.session.comparison. #}
+{% comment %}
+Floating comparison widget — include in base.html or listing templates.
+Reads comparison state from session via request.session.comparison.
+{% endcomment %}
 {% with comparison=request.session.comparison %}
 {% if comparison and comparison.pks %}
 <div id="compare-widget"
@@ -11,12 +13,14 @@
       Comparing {{ comparison.pks|length }} / 3 product{{ comparison.pks|length|pluralize }}
     </small>
     <div class="d-flex gap-1 flex-wrap">
-      {# Guard: old sessions without an 'items' key fall back to dict.items()
-         (a method), which when called yields (key, value) tuples. The inner
-         {% if item.pk %} skips those tuples safely. Sessions are also
-         normalised at request time in global_context so this is belt-and-
-         suspenders protection for any edge-case where normalisation hasn't
-         run yet. #}
+      {% comment %}
+      Guard: old sessions without an 'items' key fall back to dict.items()
+      (a method), which when called yields (key, value) tuples. The inner
+      if item.pk check skips those tuples safely. Sessions are also
+      normalised at request time in global_context so this is belt-and-
+      suspenders protection for any edge-case where normalisation hasn't
+      run yet.
+      {% endcomment %}
       {% for item in comparison.items %}
       {% if item.pk %}
       <div class="badge bg-secondary py-2 px-2">

@@ -1,6 +1,6 @@
 # ShopHub — Development Guidelines
 
-Auto-generated from project constitution and source codebase. Last updated: 2026-03-22
+Auto-generated from project constitution and source codebase. Last updated: 2026-03-24
 
 ## Project Overview
 
@@ -8,6 +8,8 @@ Auto-generated from project constitution and source codebase. Last updated: 2026
 user authentication, order management, and a full automated test suite.
 
 ## Active Technologies
+- Python 3.12 (primary), Python 3.11 (CI matrix) + Django 5.2.12, pytest 9.0.2, gunicorn 23.0.0, Playwright (new), Locust (new), whitenoise (new), sentry-sdk (new), python-json-logger (new) (004-testing-deployment)
+- SQLite (dev/test), PostgreSQL via `DATABASE_URL` (staging/production); Redis for cache (004-testing-deployment)
 
 | Layer | Technology | Version |
 |-------|------------|---------|
@@ -180,4 +182,5 @@ Key variables (see `.env.example` for full list):
 <!-- MANUAL ADDITIONS END -->
 
 ## Recent Changes
+- 004-testing-deployment: Added Python 3.12 (primary), Python 3.11 (CI matrix) + Django 5.2.12, pytest 9.0.2, gunicorn 23.0.0, Playwright (new), Locust (new), whitenoise (new), sentry-sdk (new), python-json-logger (new)
 - 002-product-catalog-system: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
