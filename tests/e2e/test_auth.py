@@ -14,12 +14,12 @@ from playwright.sync_api import expect
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 class TestAuth:
-    def test_user_registration(self, page, live_server, db):
+    def test_user_registration(self, page, base_url, db):
         """
         Navigate to registration, fill form, submit, assert logged-in state.
         No time.sleep() — uses wait_for_url or expect() throughout.
         """
-        page.goto(live_server.url + "/accounts/register/")
+        page.goto(base_url + "/accounts/register/")
         page.wait_for_load_state("networkidle")
 
         # Fill registration form fields
@@ -31,18 +31,18 @@ class TestAuth:
         page.fill("[name='password1']", "TestPass@123!")
         page.fill("[name='password2']", "TestPass@123!")
 
-        # Submit the form
-        page.locator("button[type='submit'], input[type='submit']").first.click()
+        # Submit the form — register uses btn-success (not btn-primary, which is login)
+        page.locator("button.btn-success[type='submit']").click()
         page.wait_for_load_state("networkidle")
 
         # After successful registration, user should be redirected
         # Verify user is logged in (username visible in nav) or on home page
         assert (
-            page.url != live_server.url + "/accounts/register/"
+            page.url != base_url + "/accounts/register/"
             or page.locator("text=e2etestuser, text=E2E").first.is_visible()
         )
 
-    def test_user_login(self, page, live_server, db):
+    def test_user_login(self, page, base_url, db):
         """
         Use a pre-created test user, navigate to login, fill credentials,
         submit, assert redirect to home/dashboard.
@@ -53,12 +53,12 @@ class TestAuth:
         user.set_password("LoginPass@123!")
         user.save()
 
-        page.goto(live_server.url + "/accounts/login/")
+        page.goto(base_url + "/accounts/login/")
         page.wait_for_load_state("networkidle")
 
         page.fill("[name='username']", "e2eloginuser")
         page.fill("[name='password']", "LoginPass@123!")
-        page.locator("button[type='submit'], input[type='submit']").first.click()
+        page.locator("button.btn-primary[type='submit']").click()
         page.wait_for_load_state("networkidle")
 
         # Should be redirected away from login page after success
@@ -67,7 +67,7 @@ class TestAuth:
             or page.locator("text=e2eloginuser, .dropdown-toggle").first.is_visible()
         )
 
-    def test_user_logout(self, page, live_server, db):
+    def test_user_logout(self, page, base_url, db):
         """Login first, then click logout, assert login link reappears in nav."""
         from tests.factories import UserFactory
 
@@ -76,11 +76,11 @@ class TestAuth:
         user.save()
 
         # Login
-        page.goto(live_server.url + "/accounts/login/")
+        page.goto(base_url + "/accounts/login/")
         page.wait_for_load_state("networkidle")
         page.fill("[name='username']", "e2elogoutuser")
         page.fill("[name='password']", "LogoutPass@123!")
-        page.locator("button[type='submit'], input[type='submit']").first.click()
+        page.locator("button.btn-primary[type='submit']").click()
         page.wait_for_load_state("networkidle")
 
         # Logout — click the logout link in nav

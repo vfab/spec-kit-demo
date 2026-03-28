@@ -9,7 +9,7 @@ for the E2E tests, avoiding port conflicts with a separate manage.py process.
 import pytest
 
 
-def pytest_collection_modifyitems(items):
+def pytest_collection_modifyitems(session, config, items):
     """Auto-mark all items in the e2e directory with the e2e marker."""
     for item in items:
         if "e2e" in str(item.fspath):
@@ -36,14 +36,17 @@ def browser_type_launch_args(browser_type_launch_args):
 
 
 @pytest.fixture(scope="session")
-def base_url(live_server):
+def base_url(live_server, pytestconfig):
     """
     Provide the base URL for E2E tests.
 
-    Uses pytest-django's live_server fixture which starts a real Django
-    server on a random port. When --base-url is passed via CLI, Playwright
-    uses that instead; otherwise live_server.url is used as the base.
+    Prefers --base-url CLI option so the same tests can run against a
+    deployed staging or production URL. Falls back to live_server.url
+    when no --base-url is given (the default CI/local-dev path).
     """
+    cli_url = pytestconfig.getoption("base_url", default=None)
+    if cli_url:
+        return cli_url.rstrip("/")
     return live_server.url
 
 

@@ -120,7 +120,7 @@ class CartUser(HttpUser):
     def add_to_cart(self):
         """AJAX POST to add a product to the cart (product ID 1 as placeholder)."""
         product_id = int(os.environ.get("LOCUST_TEST_PRODUCT_ID", "1"))
-        self.client.post(
+        with self.client.post(
             f"/orders/cart/add/{product_id}/",
             data={
                 "quantity": "1",
@@ -131,6 +131,8 @@ class CartUser(HttpUser):
                 "Referer": self.host,
             },
             name="POST /orders/cart/add/",
-            # Expect 200, 302, or 403 (CSRF failure acceptable under load)
             catch_response=True,
-        )
+        ) as resp:
+            # Accept 200 (success), 302 (redirect after add), 403 (CSRF expiry under load)
+            if resp.status_code not in (200, 302, 403):
+                resp.failure(f"Unexpected status {resp.status_code}")

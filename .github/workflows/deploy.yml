@@ -15,7 +15,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: staging
-      url: https://shophub-staging.fly.dev
+      url: https://${{ vars.FLY_STAGING_APP }}.fly.dev
 
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
     # Production requires manual approval via the GitHub environment protection rule
     environment:
       name: production
-      url: https://shophub.fly.dev
+      url: https://${{ vars.FLY_PRODUCTION_APP }}.fly.dev
 
     steps:
       - uses: actions/checkout@v4

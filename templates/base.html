@@ -97,7 +97,7 @@
               placeholder="Search products..."
               value="{{ request.GET.q }}"
             />
-            <button class="btn btn-outline-light" type="button" onclick="this.closest('form').submit()">
+            <button class="btn btn-outline-light" type="submit" data-testid="search-submit">
               <i class="fas fa-search"></i>
             </button>
           </form>
@@ -118,9 +118,6 @@
                 <i class="fas fa-sign-out-alt"></i> Logout
               </a>
             </li>
-            <form id="logout-form" method="post" action="{% url 'accounts:logout' %}" style="display:none;">
-              {% csrf_token %}
-            </form>
             <li class="nav-item dropdown">
               <a
                 class="nav-link dropdown-toggle"
@@ -166,6 +163,11 @@
             </li>
             {% endif %}
           </ul>
+          {% if user.is_authenticated %}
+          <form id="logout-form" method="post" action="{% url 'accounts:logout' %}" style="display:none;">
+            {% csrf_token %}
+          </form>
+          {% endif %}
         </div>
       </div>
     </nav>

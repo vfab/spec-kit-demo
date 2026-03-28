@@ -454,6 +454,9 @@ class TestSecurityHeaders:
         assert (
             "X-Frame-Options" in response
         ), "X-Frame-Options header missing from home page response"
+        assert (
+            "Content-Security-Policy" in response
+        ), "Content-Security-Policy header missing — CSPMiddleware may not be active"
 
     def test_csrf_required_on_add_to_cart(self, client):
         """POST to add-to-cart without CSRF token returns 403."""
@@ -525,12 +528,17 @@ class TestMockIntegrations:
 
     def test_file_upload_does_not_write_to_production_media(self, tmp_path, settings):
         """
-        Uploading a product image writes to a temp directory, not media/.
+        Uploading a category image via the ORM writes to MEDIA_ROOT, not media/.
 
-        Uses override_settings(MEDIA_ROOT=tmp_path) to isolate the test from
-        the production media/ folder.
+        Uses settings fixture (override_settings) with MEDIA_ROOT=tmp_path to
+        isolate the test from the production media/ folder, then exercises
+        Django's actual ImageField upload path by saving a Category instance.
         """
+        import pathlib
+
         from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from products.models import Category
 
         settings.MEDIA_ROOT = str(tmp_path)
 
@@ -541,16 +549,29 @@ class TestMockIntegrations:
             b"\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18"
             b"\xd8N\x00\x00\x00\x00IEND\xaeB`\x82"
         )
-        uploaded = SimpleUploadedFile("test.png", png_bytes, content_type="image/png")
+        uploaded = SimpleUploadedFile(
+            "upload_test_cat.png", png_bytes, content_type="image/png"
+        )
 
-        # Confirm the upload stays within tmp_path (not the real media/ dir)
-        upload_dir = tmp_path / "products"
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        dest = upload_dir / uploaded.name
-        with open(str(dest), "wb") as f:
-            f.write(uploaded.read())
+        # Exercise Django's upload machinery via the model
+        category = Category.objects.create(
+            name="Upload Isolation Test",
+            image=uploaded,
+        )
 
-        assert dest.exists(), "Uploaded file was not written to tmp_path"
-        assert not (
-            __import__("pathlib").Path("media") / "products" / "test.png"
-        ).exists(), "File was unexpectedly written to the production media/ directory"
+        # File should be stored under the overridden MEDIA_ROOT (tmp_path)
+        stored = pathlib.Path(settings.MEDIA_ROOT) / category.image.name
+        assert stored.exists(), (
+            f"Uploaded file not found at {stored} — "
+            "file was not written through Django's storage backend"
+        )
+
+        # File must NOT appear in the real media/categories/ directory
+        real = pathlib.Path("media") / "categories" / "upload_test_cat.png"
+        assert not real.exists(), (
+            "File was unexpectedly written to the production media/ directory"
+        )
+
+        # Cleanup: delete the category (image file stays in tmp_path which is
+        # auto-cleaned by pytest)
+        category.delete()

@@ -13,16 +13,17 @@ from playwright.sync_api import expect
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 class TestCheckout:
-    def _login(self, page, live_server, username, password):
+    def _login(self, page, base_url, username, password):
         """Helper: log in via the login page."""
-        page.goto(live_server.url + "/accounts/login/")
+        page.goto(base_url + "/accounts/login/")
         page.wait_for_load_state("networkidle")
         page.fill("[name='username']", username)
         page.fill("[name='password']", password)
-        page.locator("button[type='submit'], input[type='submit']").first.click()
+        # Login submit uses btn-primary — avoids matching the nav search button
+        page.locator("button.btn-primary[type='submit']").click()
         page.wait_for_load_state("networkidle")
 
-    def test_full_checkout_journey(self, page, live_server, db):
+    def test_full_checkout_journey(self, page, base_url, db):
         """
         Login → add product → proceed to checkout → fill form → submit →
         assert order confirmation heading visible with order number.
@@ -37,30 +38,27 @@ class TestCheckout:
         product = ProductFactory(category=category, is_active=True)
 
         # Step 1: Login
-        self._login(page, live_server, "checkoutuser", "CheckoutPass@123!")
+        self._login(page, base_url, "checkoutuser", "CheckoutPass@123!")
 
         # Step 2: Navigate to product and add to cart
-        page.goto(live_server.url + f"/products/{product.slug}/")
+        page.goto(base_url + f"/products/{product.slug}/")
         page.wait_for_load_state("networkidle")
-        page.locator(
-            "form button[type='submit'], form input[type='submit']"
-        ).first.click()
+        # Use the specific add-to-cart button ID to avoid matching nav search
+        page.locator("#addToCartBtn").click()
         page.wait_for_load_state("networkidle")
 
         # Step 3: Navigate to checkout
-        page.goto(live_server.url + "/orders/checkout/")
+        page.goto(base_url + "/orders/checkout/")
         page.wait_for_load_state("networkidle")
 
         # If cart is empty (due to session isolation), navigate to cart first
         if "/checkout/" not in page.url:
             # Try adding to cart again
-            page.goto(live_server.url + f"/products/{product.slug}/")
+            page.goto(base_url + f"/products/{product.slug}/")
             page.wait_for_load_state("networkidle")
-            page.locator(
-                "form button[type='submit'], form input[type='submit']"
-            ).first.click()
+            page.locator("#addToCartBtn").click()
             page.wait_for_load_state("networkidle")
-            page.goto(live_server.url + "/orders/checkout/")
+            page.goto(base_url + "/orders/checkout/")
             page.wait_for_load_state("networkidle")
 
         # Step 4: Fill checkout form if on checkout page
@@ -77,21 +75,21 @@ class TestCheckout:
             # Select payment method
             page.select_option("[name='payment_method']", "credit_card")
 
-            # Submit
-            page.locator("button[type='submit'], input[type='submit']").first.click()
+            # Submit the checkout form — btn-success is the checkout submit button
+            page.locator("button.btn-success[type='submit']").click()
             page.wait_for_load_state("networkidle")
 
             # Assert on confirmation page
             heading = page.locator("h1, h2, h3").first
             expect(heading).to_be_visible()
 
-    def test_checkout_requires_login(self, page, live_server, db):
+    def test_checkout_requires_login(self, page, base_url, db):
         """
         Without logging in, access checkout URL directly;
         assert redirect to login page.
         """
         # Attempt to access checkout without authentication
-        page.goto(live_server.url + "/orders/checkout/")
+        page.goto(base_url + "/orders/checkout/")
         page.wait_for_load_state("networkidle")
 
         # Should be redirected to login page

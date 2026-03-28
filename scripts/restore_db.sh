@@ -23,7 +23,7 @@ if [[ $# -lt 1 ]]; then
     echo "Example: $0 backup_20260324T020000.dump" >&2
     echo "" >&2
     echo "To list available backups:" >&2
-    echo "  aws s3 ls s3/\$R2_BUCKET/backups/ --endpoint-url \$R2_ENDPOINT_URL" >&2
+    echo "  aws s3 ls s3://\$R2_BUCKET/backups/ --endpoint-url \$R2_ENDPOINT_URL" >&2
     exit 1
 fi
 
