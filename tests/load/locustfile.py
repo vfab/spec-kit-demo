@@ -133,6 +133,6 @@ class CartUser(HttpUser):
             name="POST /orders/cart/add/",
             catch_response=True,
         ) as resp:
-            # Accept 200 (success), 302 (redirect after add), 403 (CSRF expiry under load)
+            # Accept 200 (success), 302 (redirect after add), 403 (CSRF expiry)
             if resp.status_code not in (200, 302, 403):
                 resp.failure(f"Unexpected status {resp.status_code}")

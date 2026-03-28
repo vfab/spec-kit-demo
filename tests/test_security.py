@@ -574,9 +574,9 @@ class TestMockIntegrations:
 
         # File must NOT appear in the real media/categories/ directory
         real = pathlib.Path("media") / "categories" / "upload_test_cat.png"
-        assert not real.exists(), (
-            "File was unexpectedly written to the production media/ directory"
-        )
+        assert (
+            not real.exists()
+        ), "File was unexpectedly written to the production media/ directory"
 
         # Cleanup: delete the category (image file stays in tmp_path which is
         # auto-cleaned by pytest)
@@ -640,9 +640,9 @@ class TestDjangoSecuritySettings:
             / "ecommerce_site"
             / "settings_production.py"
         )
-        assert "SECURE_PROXY_SSL_HEADER" in prod_settings.read_text(), (
-            "SECURE_PROXY_SSL_HEADER must be defined in settings_production.py"
-        )
+        assert (
+            "SECURE_PROXY_SSL_HEADER" in prod_settings.read_text()
+        ), "SECURE_PROXY_SSL_HEADER must be defined in settings_production.py"
 
     def test_csp_middleware_in_middleware(self):
         """CSPMiddleware is installed to emit Content-Security-Policy headers."""
