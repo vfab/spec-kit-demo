@@ -57,6 +57,8 @@ if DEBUG:
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "csp.middleware.CSPMiddleware",
+    # EPIC-11 T5: log request duration and emit X-Request-Duration in DEBUG.
+    "ecommerce_site.middleware.RequestTimingMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
