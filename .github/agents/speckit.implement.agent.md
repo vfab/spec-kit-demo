@@ -188,6 +188,18 @@ Note: This command assumes a complete task breakdown exists in tasks.md. If task
       - **Testing** — which checks were run locally and their results
     - Print the resulting PR URL on completion
 
+    After creating the PR, poll for CI status and report results:
+    - Wait up to 5 minutes for checks to complete, polling every 30 seconds:
+      ```sh
+      gh pr checks <PR-number> --watch --interval 30
+      ```
+    - If all checks pass: report success and the PR URL
+    - If any check fails:
+      - Fetch the failure log: `gh run view <run-id> --log-failed`
+      - Diagnose the root cause from the log output
+      - Fix the issue, commit, and push — CI will re-run automatically on the same PR
+      - Continue polling until all checks pass or a second failure is detected (at which point surface the error to the user for guidance)
+
 11. **Check for extension hooks**: After completion validation, check if `.specify/extensions.yml` exists in the project root.
     - If it exists, read it and look for entries under the `hooks.after_implement` key
     - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
