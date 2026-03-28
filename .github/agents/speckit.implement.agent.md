@@ -193,12 +193,16 @@ Note: This command assumes a complete task breakdown exists in tasks.md. If task
       ```sh
       gh pr checks <PR-number> --watch --interval 30
       ```
-    - If all checks pass: report success and the PR URL
+    - If all checks pass: merge the PR and delete the head branch:
+      ```sh
+      gh pr merge <PR-number> --merge --delete-branch
+      ```
+      Then report the merge result and move on.
     - If any check fails:
       - Fetch the failure log: `gh run view <run-id> --log-failed`
       - Diagnose the root cause from the log output
       - Fix the issue, commit, and push — CI will re-run automatically on the same PR
-      - Continue polling until all checks pass or a second failure is detected (at which point surface the error to the user for guidance)
+      - Continue polling until all checks pass (then merge as above), or a second failure is detected (at which point surface the error to the user for guidance before attempting further fixes)
 
 11. **Check for extension hooks**: After completion validation, check if `.specify/extensions.yml` exists in the project root.
     - If it exists, read it and look for entries under the `hooks.after_implement` key
