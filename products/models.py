@@ -50,7 +50,17 @@ class Category(models.Model):
     name = models.CharField(max_length=200, unique=True)
     slug = models.SlugField(max_length=200, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
-    image = models.ImageField(upload_to="categories/", blank=True, null=True)
+    image = models.ImageField(
+        upload_to="categories/",
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=["jpg", "jpeg", "png", "webp", "gif"]
+            ),
+            validate_image_file_size,
+        ],
+    )
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
     )

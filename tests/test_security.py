@@ -1,6 +1,8 @@
 """
 Tests for EPIC-10 T3 — Authentication Security Enhancement.
 Tests for EPIC-10 T4 — SQL Injection Audit and Prevention.
+Tests for EPIC-10 T5, T12 — XSS Protection, Security Headers, CSP.
+Tests for EPIC-10 T9 — File Upload Security.
 
 Covers:
 - Strong password validation (minimum length 10, symbol required)
@@ -9,6 +11,10 @@ Covers:
 - Password-reset token timeout
 - SQL injection audit: ORM-only usage, no raw SQL
 - SQL injection robustness: malicious inputs rejected or safely parameterised
+- Security headers: SECURE_CONTENT_TYPE_NOSNIFF, SECURE_BROWSER_XSS_FILTER,
+  X_FRAME_OPTIONS, SECURE_REFERRER_POLICY
+- Content Security Policy (CSP middleware configured)
+- File upload extension and size validation on Category and ProductImage fields
 """
 
 import pytest
@@ -568,10 +574,162 @@ class TestMockIntegrations:
 
         # File must NOT appear in the real media/categories/ directory
         real = pathlib.Path("media") / "categories" / "upload_test_cat.png"
-        assert not real.exists(), (
-            "File was unexpectedly written to the production media/ directory"
-        )
+        assert (
+            not real.exists()
+        ), "File was unexpectedly written to the production media/ directory"
 
         # Cleanup: delete the category (image file stays in tmp_path which is
         # auto-cleaned by pytest)
         category.delete()
+
+
+# ---------------------------------------------------------------------------
+# EPIC-10 T5, T12 — Django security settings and Content Security Policy
+# ---------------------------------------------------------------------------
+
+
+class TestDjangoSecuritySettings:
+    """Django security settings emit appropriate security-hardening headers."""
+
+    def test_secure_content_type_nosniff_enabled(self):
+        """SECURE_CONTENT_TYPE_NOSNIFF prevents MIME-sniffing attacks."""
+        from django.conf import settings
+
+        assert settings.SECURE_CONTENT_TYPE_NOSNIFF is True
+
+    def test_secure_browser_xss_filter_enabled(self):
+        """SECURE_BROWSER_XSS_FILTER activates the legacy XSS auditor header."""
+        from django.conf import settings
+
+        assert settings.SECURE_BROWSER_XSS_FILTER is True
+
+    def test_x_frame_options_deny(self):
+        """X_FRAME_OPTIONS is DENY to block clickjacking via iframes."""
+        from django.conf import settings
+
+        assert settings.X_FRAME_OPTIONS == "DENY"
+
+    def test_referrer_policy_set(self):
+        """SECURE_REFERRER_POLICY restricts referrer leakage on cross-origin nav."""
+        from django.conf import settings
+
+        assert settings.SECURE_REFERRER_POLICY == "strict-origin-when-cross-origin"
+
+    def test_secure_proxy_ssl_header_set(self):
+        """SECURE_PROXY_SSL_HEADER is production-only and None in base/test settings.
+
+        Django's global_settings defines SECURE_PROXY_SSL_HEADER = None, so the
+        attribute always exists on the settings object.  What matters is that
+        neither settings.py nor settings_test.py overrides it to a non-None
+        value — a non-None value would cause Django to trust X-Forwarded-Proto
+        in development and CI where there is no trusted reverse-proxy.
+        Its presence in settings_production.py is verified by a plain text
+        search so we don't need to import that module (which requires live env
+        vars).
+        """
+        import pathlib
+
+        from django.conf import settings as test_settings
+
+        # 1. Must be None (unset) in the active (test/dev) settings.
+        # Django's global_settings always defines this attribute, so we check
+        # the value rather than attribute existence.
+        assert test_settings.SECURE_PROXY_SSL_HEADER is None, (
+            "SECURE_PROXY_SSL_HEADER must be None in base/test settings — "
+            "it is only safe to trust in a known proxied production environment"
+        )
+
+        # 2. Must be present in the production settings file.
+        prod_settings = (
+            pathlib.Path(__file__).resolve().parent.parent
+            / "ecommerce_site"
+            / "settings_production.py"
+        )
+        assert (
+            "SECURE_PROXY_SSL_HEADER" in prod_settings.read_text()
+        ), "SECURE_PROXY_SSL_HEADER must be defined in settings_production.py"
+
+    def test_csp_middleware_in_middleware(self):
+        """CSPMiddleware is installed to emit Content-Security-Policy headers."""
+        from django.conf import settings
+
+        assert "csp.middleware.CSPMiddleware" in settings.MIDDLEWARE
+
+    def test_csp_default_src_is_self(self):
+        """CSP default-src is restricted to 'self' (no open wildcard)."""
+        from django.conf import settings
+
+        assert "'self'" in settings.CSP_DEFAULT_SRC
+        assert "*" not in settings.CSP_DEFAULT_SRC
+
+    def test_csp_script_src_no_external_wildcard(self):
+        """CSP script-src does not include an open wildcard '*'."""
+        from django.conf import settings
+
+        assert "*" not in settings.CSP_SCRIPT_SRC
+
+    def test_csp_frame_ancestors_is_none(self):
+        """CSP frame-ancestors 'none' prevents framing from any origin."""
+        from django.conf import settings
+
+        assert "'none'" in settings.CSP_FRAME_ANCESTORS
+
+
+# ---------------------------------------------------------------------------
+# EPIC-10 T9 — File upload extension validation on Category model
+# ---------------------------------------------------------------------------
+
+
+class TestCategoryImageValidators:
+    """Category.image enforces allowed extensions and a size cap."""
+
+    def _get_category_image_field(self):
+        from products.models import Category
+
+        return Category._meta.get_field("image")
+
+    def test_category_image_has_extension_validator(self):
+        """Category.image field includes a FileExtensionValidator."""
+        from django.core.validators import FileExtensionValidator
+
+        field = self._get_category_image_field()
+        has_ext_validator = any(
+            isinstance(v, FileExtensionValidator) for v in field.validators
+        )
+        assert has_ext_validator, "Category.image is missing FileExtensionValidator"
+
+    def test_category_image_extension_validator_blocks_exe(self):
+        """Category.image rejects disallowed extension (e.g. .exe)."""
+        from django.core.exceptions import ValidationError
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.core.validators import FileExtensionValidator
+
+        field = self._get_category_image_field()
+        ext_validator = next(
+            v for v in field.validators if isinstance(v, FileExtensionValidator)
+        )
+        fake_file = SimpleUploadedFile("malware.exe", b"")
+        with pytest.raises(ValidationError):
+            ext_validator(fake_file)
+
+    def test_category_image_extension_validator_allows_jpg(self):
+        """Category.image accepts .jpg uploads."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.core.validators import FileExtensionValidator
+
+        field = self._get_category_image_field()
+        ext_validator = next(
+            v for v in field.validators if isinstance(v, FileExtensionValidator)
+        )
+        # Should not raise
+        fake_file = SimpleUploadedFile("photo.jpg", b"")
+        ext_validator(fake_file)  # raises ValidationError on failure
+
+    def test_category_image_has_size_validator(self):
+        """Category.image includes a file-size validator."""
+        from products.models import validate_image_file_size
+
+        field = self._get_category_image_field()
+        assert (
+            validate_image_file_size in field.validators
+        ), "Category.image is missing validate_image_file_size validator"
