@@ -1,9 +1,15 @@
 name: Automated Database Backup
 
 on:
-  schedule:
-    - cron: "0 2 * * *"  # Daily at 02:00 UTC
-  workflow_dispatch:  # Manual trigger
+  # Schedule is intentionally disabled until the production Fly.io app and R2
+  # bucket are provisioned and the required secrets/vars are configured in
+  # GitHub repository settings (FLY_API_TOKEN, FLY_PRODUCTION_APP,
+  # R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_ENDPOINT_URL).
+  # Re-enable before production go-live — see docs/go-live-checklist.md.
+  #
+  # schedule:
+  #   - cron: "0 2 * * *"  # Daily at 02:00 UTC
+  workflow_dispatch:  # Manual trigger (use to verify once secrets are set)
 
 jobs:
   backup:

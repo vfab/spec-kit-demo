@@ -39,6 +39,11 @@ Complete every item before promoting to production.
   - Monitor target: `https://shophub.fly.dev/health/`
   - Check interval: 5 minutes
   - Alert contact: operator email confirmed
+- [ ] **Enable automated backup schedule**: uncomment the `schedule` cron trigger in
+  `.github/workflows/backup.yml` and configure these secrets/vars in GitHub repo
+  Settings → Secrets & Variables:
+  - Secrets: `FLY_API_TOKEN`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
+  - Variables: `FLY_PRODUCTION_APP`, `R2_BUCKET`, `R2_ENDPOINT_URL`
 - [ ] **Automated backup workflow** (`backup.yml`) has run successfully at least once:
   - Navigate to GitHub → Actions → Automated Database Backup
   - Confirm last run status is green
