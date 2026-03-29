@@ -1,6 +1,30 @@
 {% extends 'base.html' %} {% load static %} {% block title %}{{ product.name }}
 - ShopHub{% endblock %} {% block meta_description %}{{
-product.description|truncatewords:25 }}{% endblock %} {% block content %}
+product.description|truncatewords:25 }}{% endblock %}
+
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ product.name|escapejs }}",
+  "description": "{{ product.description|escapejs }}",
+  "sku": "{{ product.sku|escapejs }}",
+  "url": "{{ request.build_absolute_uri }}",
+  {% if images %}"image": "{{ request.scheme }}://{{ request.get_host }}{{ images.0.image.url }}",{% endif %}
+  "offers": {
+    "@type": "Offer",
+    "priceCurrency": "USD",
+    "price": "{{ product.price }}",
+    "availability": "{% if product.stock_quantity > 0 %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "url": "{{ request.build_absolute_uri }}"
+  },
+  "category": "{{ product.category.name|escapejs }}"
+}
+</script>
+{% endblock %}
+
+{% block content %}
 <div class="container mt-4">
   <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-4">

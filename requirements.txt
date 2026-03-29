@@ -31,8 +31,10 @@ pre-commit==3.7.0
 mypy==1.9.0
 django-stubs==5.0.0
 radon==6.0.1
+pydocstyle==6.3.0
 bandit==1.9.4
 pip-audit==2.10.0
+pytest-xdist==3.6.1
 
 # For future use (will be added as needed)
 # django-crispy-forms==2.1
