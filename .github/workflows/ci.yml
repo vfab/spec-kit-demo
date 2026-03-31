@@ -36,6 +36,16 @@ jobs:
       - name: Type-check (mypy)
         run: mypy accounts orders products ecommerce_site core
 
+      - name: Complexity check (radon)
+        # Report all B+ blocks; fail if any score D (CC ≥ 16) or worse.
+        # Existing C-grade functions are acceptable — D+ signals refactor needed.
+        run: |
+          radon cc accounts core orders products ecommerce_site -nb -s --min B
+          if radon cc accounts core orders products ecommerce_site -nb --min D | grep -q .; then
+            echo "ERROR: One or more functions scored D or worse complexity. Refactor required."
+            exit 1
+          fi
+
   security:
     name: Security Scan
     needs: quality
@@ -117,6 +127,7 @@ jobs:
           pytest tests/ \
             --ignore=tests/e2e \
             --ignore=tests/load \
+            -n auto \
             --cov=. \
             --cov-fail-under=95 \
             --junit-xml=test-results.xml \

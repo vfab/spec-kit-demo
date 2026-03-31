@@ -19,6 +19,7 @@ sections = ["FUTURE", "STDLIB", "THIRDPARTY", "DJANGO", "FIRSTPARTY", "LOCALFOLD
 skip_glob = ["*/migrations/*", ".venv/*"]
 
 [tool.coverage.run]
+parallel = true
 omit = [
     "tests/e2e/*",
     "tests/load/*",
@@ -26,3 +27,10 @@ omit = [
     "ecommerce_site/wsgi.py",
     "ecommerce_site/asgi.py",
 ]
+
+[tool.pydocstyle]
+convention = "google"
+# D1xx: missing docstrings — not enforced (many internal methods legitimately lack them)
+# D107: missing docstring in __init__ — noisy for Django class-based views
+add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107"]
+match-dir = "^(?!migrations|tests|\\.venv).*"
