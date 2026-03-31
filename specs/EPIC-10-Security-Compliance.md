@@ -1,6 +1,6 @@
 # Epic 10: Security & Compliance 🔒
 
-**Status:** 🔄 Partially done — Task 1 (Django security settings hardening: SECURE_* headers, CSRF, secure cookies, env-var driven) ✅ complete as part of Epic 6 work. Tasks 2–N pending.
+**Status:** ✅ Complete — SECURE_* headers, CSP middleware, X-Content-Type-Options, X-Frame-Options, file upload validators (MIME + extension allowlist), bandit SAST and pip-audit CVE scanning enforced in CI, SECURE_PROXY_SSL_HEADER in production settings
 
 ## Overview
 

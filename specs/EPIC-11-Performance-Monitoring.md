@@ -1,6 +1,6 @@
 # Epic 11: Performance & Monitoring 📊
 
-**Status:** 📅 Planned — no tasks started. select_related/prefetch_related used in views. No caching, debug toolbar, or monitoring configured yet.
+**Status:** ✅ Complete — RequestTimingMiddleware (duration logging + X-Request-Duration header), Redis caching (LocMemCache fallback in dev/test), django-debug-toolbar in DEBUG mode, /health/ enhanced with cache probe (status=degraded on cache miss), SlowQueryFilter, full unit test coverage
 
 ## Overview
 
